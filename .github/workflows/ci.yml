@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: pre-commit (all files)
+        run: uvx pre-commit run --all-files --show-diff-on-failure
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Sync (with dev group)
+        run: uv sync
+      - name: Tests
+        run: uv run pytest -q
+      - name: CLI smoke
+        run: |
+          uv run socratic-method --version
+          uv run socratic-method setup all --dry-run --root "$RUNNER_TEMP"
+          uv run socratic-method status --root "$RUNNER_TEMP"
+          uv run socratic-method validate evals/fixtures/tech-talk-series-20260704.md
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Build sdist + wheel
+        run: uv build
+      - name: Check metadata
+        run: uvx twine check dist/*
+      - name: Install from wheel and smoke it
+        run: |
+          uv venv /tmp/wheel-venv
+          VIRTUAL_ENV=/tmp/wheel-venv uv pip install dist/*.whl
+          /tmp/wheel-venv/bin/socratic-method --version
+          /tmp/wheel-venv/bin/socratic-method setup all --dry-run --root "$RUNNER_TEMP"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/

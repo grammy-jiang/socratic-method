@@ -1,0 +1,35 @@
+# One tool per file type, deliberately — stacked linters/formatters on the same type
+# fight each other:
+#   Python          -> ruff (lint + format in ONE tool; no black/isort/flake8 alongside)
+#   YAML            -> check-yaml (syntax only; no style formatter)
+#   GitHub workflow -> actionlint (the workflow dialect, distinct from plain YAML)
+#   JSON            -> check-json
+#   TOML            -> check-toml
+#   Markdown        -> whitespace hygiene only: a formatter would reflow
+#                      src/socratic_method/assets/SKILL.md, the shipped skill asset,
+#                      whose prose shape is deliberate.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-added-large-files
+      - id: check-merge-conflict
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.20
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint

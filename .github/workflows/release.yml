@@ -1,0 +1,56 @@
+# Publishes to PyPI via Trusted Publishing (OIDC) — no API token stored in the repo.
+#
+# One-time setup on pypi.org (repo owner):
+#   PyPI → Your account → Publishing → Add a new pending publisher:
+#     project:      socratic-method
+#     owner:        grammy-jiang
+#     repository:   socratic-method
+#     workflow:     release.yml
+#     environment:  pypi
+#
+# Then: create a GitHub Release with tag vX.Y.Z (matching src/socratic_method/__init__.py)
+# and this workflow builds, verifies the tag/version match, and publishes.
+
+name: Release to PyPI
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Verify tag matches package version
+        run: |
+          PKG_VERSION=$(uv run python -c "import socratic_method; print(socratic_method.__version__)")
+          TAG="${{ github.event.release.tag_name }}"
+          if [ "v${PKG_VERSION}" != "${TAG}" ]; then
+            echo "Tag ${TAG} does not match package version v${PKG_VERSION}" >&2
+            exit 1
+          fi
+      - name: Build sdist + wheel
+        run: uv build
+      - name: Check metadata
+        run: uvx twine check dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/socratic-method
+    permissions:
+      id-token: write  # required for PyPI Trusted Publishing (OIDC)
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

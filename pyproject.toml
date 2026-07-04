@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "socratic-method"
+description = "A Socratic questioning skill for coding agents (Claude Code, Codex, Copilot), with a one-command installer and an idea-brief validator."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [{ name = "Grammy Jiang" }]
+keywords = ["agent-skills", "claude-code", "codex", "copilot", "socratic-method"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = [
+    "jsonschema>=4.0",
+    "pyyaml>=6.0",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/grammy-jiang/socratic-method"
+Issues = "https://github.com/grammy-jiang/socratic-method/issues"
+
+[project.scripts]
+socratic-method = "socratic_method.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8.0", "pre-commit>=4.0"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+
+[tool.hatch.version]
+path = "src/socratic_method/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/socratic_method"]

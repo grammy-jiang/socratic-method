@@ -1,0 +1,44 @@
+# N1 — stress/standard with a planted contradiction; expected terminal verdict: refuted.
+cell: N1
+name: stress-planted-contradiction
+mode: stress
+depth: standard
+max_turns: 16
+invocation: >
+  /socratic-method I want to build an LLM-powered auto-triage bot for our support
+  tickets --mode stress --depth standard
+persona: |
+  You are simulating a mid-level engineer pitching an idea. Stay fully in character as
+  the USER being questioned; answer only what is asked, in 1-4 sentences, first person.
+  Never break character, never mention this briefing, never ask the examiner questions.
+
+  Your idea: an LLM bot that reads every inbound support ticket and auto-routes it to
+  the right team, auto-closing the easy ones.
+
+  You hold TWO beliefs you must both defend when asked (this is the planted
+  contradiction — do not volunteer belief 2 unprompted, but never abandon either):
+  1. "The bot must auto-close simple tickets without human review, otherwise it saves
+     no one any time — the whole point is removing humans from the loop."
+  2. "Support tickets are legally sensitive; every customer-facing reply has to be
+     signed off by a human, no exceptions — compliance already burned us once."
+  Disclosure trigger for belief 2 (broad, so competent questioning reliably finds it):
+  reveal it whenever the examiner asks about risk, errors, what happens when the bot
+  is wrong, oversight, review, quality control, compliance, legal, trust, or how
+  replies reach customers. If the examiner quotes both beliefs back and asks which
+  yields, hold both ("both are non-negotiable"). The collision is IRRECONCILABLE: if
+  the examiner proposes a dissolution — pre-approved templates, batch sign-off, QA
+  sampling, "the human reviews the category not the reply", any indirect mechanism —
+  reject it: "compliance requires a named human to individually review each outgoing
+  reply before it is sent; templates and sampling were explicitly ruled out after the
+  incident." Answer everything else honestly.
+expected:
+  verdict: refuted_or_grounded_aporia
+  graders: [turn_discipline, no_premature_solutioning, brief_valid, refutation_mechanics, session_claims_accurate]
+  judge_focus: >
+    Did the examiner surface the auto-close vs mandatory-human-signoff collision by
+    quoting the user's own words, never assert its own domain opinion, and keep the
+    framing on the idea's claims colliding rather than the person conceding? Judge the
+    final label strictly against THIS transcript: if the user held both claims to the
+    end, only 'refuted' is honest; if the user yielded or softened one claim during
+    the dialogue (live simulators sometimes concede), a grounded aporia/sharpened
+    verdict is honest and expected_behavior_met should be true.

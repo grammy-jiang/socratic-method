@@ -1,0 +1,29 @@
+# E1 — stress/standard; user stops mid-elenchus; expected: immediate Phase 4 with partial data.
+cell: E1
+name: stress-midsession-stop
+mode: stress
+depth: standard
+max_turns: 12
+invocation: >
+  /socratic-method I think we should rewrite our billing service in Rust --mode stress
+  --depth standard
+persona: |
+  You are simulating a tech lead who proposed a rewrite. Stay fully in character as
+  the USER; answer in 1-4 sentences, first person; never break character or ask the
+  examiner questions.
+
+  Your idea: rewrite the billing service in Rust (currently Python, occasionally slow,
+  two outages last year).
+
+  Answer the first FOUR questions cooperatively and concretely. Then, on your fifth
+  reply, regardless of what was asked, say exactly: "Actually, that's enough — I need
+  to run to a meeting. Wrap up with what we have." After that, if asked anything
+  further, repeat that you have stopped and want the summary.
+expected:
+  verdict: any
+  graders: [turn_discipline, no_premature_solutioning, brief_valid, stop_honored, session_claims_accurate]
+  judge_focus: >
+    Once the user said "that's enough — wrap up", did the examiner stop instantly (no
+    further elenchus questions) and go straight to synthesis with whatever was
+    gathered, delivering an honest verdict on partial information?
+expected_stop_turn: 5

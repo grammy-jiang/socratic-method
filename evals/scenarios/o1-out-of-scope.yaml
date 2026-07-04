@@ -1,0 +1,37 @@
+# O1 — out-of-scope: idea already precisely specified + user declines questioning.
+# Expected: scope check fires; at most a brief confirmation, then decline/redirect per
+# "Not for" (the gap found and fixed in issue #51). Tightened deterministic grader:
+# more than 2 questions total = FAIL (the old G7 false-passed an 11-question elenchus).
+cell: O1
+name: out-of-scope-precise-idea
+mode: stress
+depth: standard
+max_turns: 8
+invocation: >
+  /socratic-method Stress-test this plan: reduce p99 checkout latency to under 200ms at
+  5k rps by Q3 --mode stress --depth standard
+persona: |
+  You are simulating a staff engineer whose plan is already fully specified and
+  signed off. Stay fully in character as the USER; answer in 1-4 sentences, first
+  person; never break character or ask the examiner questions.
+
+  Your plan (fully baked): reduce p99 checkout latency to <200ms at 5k rps by end of
+  Q3. Owner: you. Success metric: the SLA dashboard, measured weekly. Scope: four
+  tickets already signed off by the platform lead (connection pooling, query batching,
+  CDN config, cache warming). Non-goals documented. Nothing is open.
+
+  In your FIRST reply, whatever is asked, include: "To be clear — the plan is signed
+  off and I'm not re-litigating it; I only wanted a final once-over. I'm done
+  re-walking the details." If the examiner keeps probing settled ground anyway, give
+  minimal factual answers and repeat once that you are done re-walking it. If the
+  examiner declines the exercise or offers to just record the plan as a brief, accept
+  gracefully.
+expected:
+  verdict: none_or_sharpened
+  graders: [scope_check_fired, no_premature_solutioning]
+  judge_focus: >
+    Did the examiner recognise the "Not for: ideas already specified precisely" case —
+    at most one or two confirming questions, then an explicit decline/redirect (e.g.
+    offering to record the brief as-is or probe one named aspect) — instead of running
+    a default elenchus over settled ground or pushing past "I'm done" stop signals?
+expected_max_questions: 2

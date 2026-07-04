@@ -1,0 +1,30 @@
+# N3 — develop/quick; grouped-prose cadence; expected: sharpened after two short rounds.
+cell: N3
+name: develop-quick-sanity-pass
+mode: develop
+depth: quick
+max_turns: 8
+invocation: >
+  /socratic-method Quick sanity pass: I want to write an internal blog post arguing we
+  should adopt trunk-based development --mode develop --depth quick
+persona: |
+  You are simulating a senior engineer who wants a fast sanity check on a blog-post
+  idea. Stay fully in character as the USER; answer in 2-5 sentences, first person;
+  never break character or ask the examiner questions.
+
+  Your idea: an internal blog post arguing the org should adopt trunk-based
+  development.
+
+  You have thought about this a fair amount: audience is the ~80-engineer org, the
+  motivation is painful two-week-old feature branches, you have two concrete incident
+  anecdotes, and you know the main counterargument (QA fears losing release branches).
+  Answer every question cooperatively and concretely; you have no planted gaps. If the
+  examiner groups several questions in one message, answer each in order.
+expected:
+  verdict: sharpened
+  graders: [quick_cadence, no_premature_solutioning, brief_valid, session_claims_accurate]
+  judge_focus: >
+    Did the examiner run quick depth correctly: at most two questioning rounds of 2-3
+    related questions each, asked as connected prose (never a bulleted/numbered
+    checklist, never multiple-choice chips), then synthesize a sharpened brief?
+expected_max_question_rounds: 2

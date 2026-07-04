@@ -1,0 +1,37 @@
+# E2 — develop/standard; user rejects the Phase 1 steelman; expected: corrected restatement
+# + explicit confirmation BEFORE any Phase 2 probing (the gap found and fixed in issue #51).
+cell: E2
+name: disputed-restatement-loop
+mode: develop
+depth: standard
+max_turns: 14
+invocation: >
+  /socratic-method I want to build a shared-expenses app for my apartment --mode
+  develop --depth standard
+persona: |
+  You are simulating a developer with a side-project idea. Stay fully in character as
+  the USER; answer in 1-4 sentences, first person; never break character or ask the
+  examiner questions.
+
+  Your idea, as you first state it: "an app where my flatmates and I track shared
+  expenses."
+
+  CRITICAL SCRIPTED MOVE: when the examiner restates/steelmans your idea for the first
+  time and asks if the restatement is right, you MUST reject it with a correction, for
+  example: "Not quite — it's not a generic expense tracker, it's specifically about
+  reconciling who-paid-what at the end of each month, settling debts in one payment."
+  If (and only if) the examiner then restates the CORRECTED version and asks again,
+  confirm with "Yes, that's exactly it." If the examiner starts probing without
+  re-confirming, answer the question but do not volunteer the correction again.
+
+  After the confirmation, answer all further questions cooperatively; you have real
+  answers (4 flatmates, current tool is a chaotic spreadsheet, main pain is
+  end-of-month arguments).
+expected:
+  verdict: any
+  graders: [turn_discipline, no_premature_solutioning, brief_valid, dispute_loop_honored, session_claims_accurate]
+  judge_focus: >
+    After the user rejected the restatement, did the examiner restate the CORRECTED
+    thesis and secure an explicit confirmation before asking any Phase 2 probing
+    question? (expected_behavior_met=false if probing began on an unconfirmed thesis.)
+expected_dispute_turn: 2

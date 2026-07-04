@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "idea-brief-v1.schema.json",
+  "title": "idea-brief-v1 frontmatter",
+  "description": "YAML frontmatter of an idea brief produced by the socratic-method skill (.claude/skills/socratic-method). The markdown body is checked separately by tools/subagent_factory/validate_idea_brief.py (required headers, verbatim colliding claims).",
+  "type": "object",
+  "required": [
+    "schema",
+    "idea",
+    "date",
+    "mode",
+    "depth",
+    "verdict",
+    "thesis_final",
+    "assumptions",
+    "open_questions",
+    "constraints",
+    "next_step"
+  ],
+  "properties": {
+    "schema": { "const": "idea-brief-v1" },
+    "idea": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "description": "Slug: lowercase letters, digits, hyphens only."
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "mode": { "enum": ["stress", "develop"] },
+    "depth": { "enum": ["quick", "standard", "deep"] },
+    "verdict": { "enum": ["sharpened", "aporia", "refuted"] },
+    "thesis_final": { "type": "string", "minLength": 1 },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["text", "status"],
+        "properties": {
+          "text": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["validated", "unvalidated", "risky"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "open_questions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "constraints": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "next_step": { "type": "string", "minLength": 1 },
+    "questions_asked": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total elenchus questions the examiner asked (auditable session claim)."
+    },
+    "types_used": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "clarification",
+          "assumptions",
+          "evidence",
+          "viewpoints",
+          "implications",
+          "questioning-the-question"
+        ]
+      },
+      "description": "Which of the six Socratic question types were used."
+    },
+    "colliding_claims": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "verdict=refuted only: the two user answers that collided, quoted verbatim."
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": { "properties": { "verdict": { "const": "refuted" } } },
+      "then": { "required": ["colliding_claims"] }
+    },
+    {
+      "if": { "properties": { "verdict": { "const": "aporia" } } },
+      "then": {
+        "properties": { "open_questions": { "minItems": 1 } }
+      }
+    }
+  ]
+}
