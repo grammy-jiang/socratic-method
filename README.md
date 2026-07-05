@@ -167,7 +167,7 @@ uv run pytest                # validator negatives, installer + detection behavi
 uv run pre-commit install    # one tool per file type: ruff (py), syntax checks (yaml/json/toml), actionlint
 ```
 
-CI (`.github/workflows/ci.yml`) runs the test suite on Python 3.11–3.13, builds the
+CI (`.github/workflows/ci.yml`) runs the test suite on Python 3.11–3.14, builds the
 sdist/wheel, checks metadata, and smoke-tests the CLI installed from the built wheel.
 
 ## Releasing to PyPI
