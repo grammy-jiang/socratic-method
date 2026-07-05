@@ -6,9 +6,12 @@ description: Cut a socratic-method release to GitHub Releases and PyPI. Use when
 # Release socratic-method
 
 Releases are tag-driven: an annotated tag `vX.Y.Z` on master fires
-`.github/workflows/release.yml`, whose three jobs build + verify the distributions,
-create the GitHub Release with the wheel and sdist attached, and publish to PyPI via
-Trusted Publishing (OIDC; bound to workflow file `release.yml` + environment `pypi`).
+`.github/workflows/release.yml`, whose three jobs run in order: build + verify the
+distributions, publish to PyPI via Trusted Publishing (OIDC; bound to workflow file
+`release.yml` + environment `pypi`), then create the GitHub Release with the same
+wheel and sdist attached. The GitHub Release is deliberately gated on the PyPI
+publish — if PyPI fails, no release appears (PyPI is immutable, the release is not);
+if only the github-release job fails, just re-run it.
 
 ## Preconditions
 

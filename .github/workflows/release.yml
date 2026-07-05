@@ -1,6 +1,10 @@
 # Tag-driven release: push a tag vX.Y.Z (matching src/socratic_method/__init__.py)
-# and this workflow builds, creates the GitHub Release with the dist files attached,
-# and publishes to PyPI via Trusted Publishing (OIDC) — no API token stored in the repo.
+# and this workflow builds once, publishes to PyPI via Trusted Publishing (OIDC — no
+# API token stored in the repo), then creates the GitHub Release with the same dist
+# files attached. PyPI deliberately goes FIRST and gates the GitHub Release: PyPI is
+# immutable, so if it fails the release must not appear either (no half-published
+# state); if only the GitHub Release step fails, re-run that job — the package is
+# already safely on PyPI and both sides carry byte-identical artifacts.
 #
 # One-time setup on pypi.org (repo owner):
 #   PyPI → Your account → Publishing → Add a new pending publisher:
@@ -20,6 +24,12 @@ on:
   # with the Actions GITHUB_TOKEN do not fire tag-push events, so dispatch this
   # workflow manually with ref = the new tag (e.g. v0.1.0).
   workflow_dispatch:
+
+# One release pipeline per ref; queue (never cancel) duplicates — cancelling a
+# publish mid-flight could strand PyPI and the GitHub Release out of sync.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -44,21 +54,6 @@ jobs:
           name: dist
           path: dist/
 
-  github-release:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write  # required to create the GitHub Release
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
-      - uses: softprops/action-gh-release@v2
-        with:
-          files: dist/*
-          generate_release_notes: true
-
   pypi:
     needs: build
     runs-on: ubuntu-latest
@@ -73,3 +68,20 @@ jobs:
           name: dist
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
+
+  github-release:
+    # Gated on the PyPI publish (see header comment): the GitHub Release only
+    # appears once the identical dists are live on PyPI.
+    needs: [build, pypi]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # required to create the GitHub Release
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
