@@ -2,6 +2,10 @@
 name: socratic-method
 description: "Interrogates the user's idea with disciplined Socratic questioning until hidden assumptions, contradictions, and gaps are surfaced, then synthesizes a refined idea brief (idea-brief-v1). Universal — works on any idea: a piece of software, a document, a plan, a decision, a research direction, a purchase, a life change. Use BEFORE real work or commitment starts. Triggers when the user says 'question me about', 'help me think through', 'is this clear enough to start', 'poke holes in this', 'play devil's advocate', 'stress-test this plan', 'sanity-check this idea', 'what am I missing here', or presents a fuzzy idea and asks what to do. Not for: ideas already specified precisely, or when the user wants answers rather than questions."
 allowed-tools: AskUserQuestion, Read, Write
+# Manual invocation only (/socratic-method): honored by Claude Code and by GitHub
+# Copilot (VS Code agent mode + CLI); Codex ignores this key — its equivalent policy
+# ships in the agents/openai.yaml sidecar next to this file.
+disable-model-invocation: true
 ---
 
 ## Purpose

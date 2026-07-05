@@ -26,8 +26,16 @@ notes/                         gitignored; where the skill writes real briefs
 ```
 
 `SKILL_NAME` and `__version__` live in `src/socratic_method/__init__.py`. Platform install
-paths are data-driven in `installer.py`'s `PLATFORMS` dict; the three managed files are
-`MANAGED_FILES` = SKILL.md, references/example-session.md, idea-brief-v1.schema.json.
+paths are data-driven in `installer.py`'s `PLATFORMS` dict; the managed files are
+`MANAGED_FILES` = SKILL.md, references/example-session.md, idea-brief-v1.schema.json,
+agents/openai.yaml.
+
+The skill is **manual-invocation-only** by policy, encoded in two places that must stay
+in sync (pinned by `tests/test_assets.py`): `disable-model-invocation: true` in SKILL.md
+frontmatter (honored by Claude Code and by Copilot in VS Code agent mode + CLI; ignored
+by Codex) and `agents/openai.yaml` with `policy.allow_implicit_invocation: false` (the
+Codex equivalent; other platforms never read it). Known gap: the Copilot cloud coding
+agent documents no user-only mechanism and may still auto-invoke.
 
 ## Dev loop
 

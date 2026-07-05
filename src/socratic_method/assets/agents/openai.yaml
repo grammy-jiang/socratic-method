@@ -1,0 +1,7 @@
+# Codex-only sidecar; Claude Code and GitHub Copilot never read this file.
+# Keeps the skill out of Codex's auto-invocation prompt list (and out of its
+# per-session context) while leaving it explicitly invocable via $socratic-method.
+# The same policy for Claude Code / Copilot lives in SKILL.md frontmatter
+# (disable-model-invocation: true), which Codex ignores.
+policy:
+  allow_implicit_invocation: false

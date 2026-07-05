@@ -6,6 +6,6 @@ artifact. This package ships the skill, a deterministic brief validator, and a `
 command that installs the skill for Claude Code, OpenAI Codex, and GitHub Copilot.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 SKILL_NAME = "socratic-method"

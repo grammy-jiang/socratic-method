@@ -38,6 +38,7 @@ MANAGED_FILES = (
     "SKILL.md",
     "references/example-session.md",
     "idea-brief-v1.schema.json",
+    "agents/openai.yaml",  # Codex invocation policy; inert on other platforms
 )
 
 

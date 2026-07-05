@@ -79,14 +79,21 @@ registry (`installer.py`) — if a platform moves its skills directory, the fix 
 
 ## Use the skill
 
-In any agent with the skill installed:
+The skill is **manual-invocation-only**: it never auto-triggers on phrasing, and it costs
+zero context tokens until you call it. Invoke it explicitly:
 
-> stress-test this plan: …
-> help me think through …
-> poke holes in this idea: …
+```text
+/socratic-method <idea> [--mode stress|develop] [--depth quick|standard|deep]   # Claude Code, Copilot
+$socratic-method <idea> ...                                                     # Codex ($ mention)
+```
 
-Or invoke directly: `/socratic-method <idea> [--mode stress|develop] [--depth quick|standard|deep]`.
 The session ends with the brief saved to `notes/idea-briefs/<slug>-YYYYMMDD.md`.
+
+This is enforced by `disable-model-invocation: true` in the skill frontmatter (Claude
+Code; Copilot VS Code agent mode and CLI) and by the `agents/openai.yaml` sidecar with
+`policy.allow_implicit_invocation: false` (Codex ignores the frontmatter key). One known
+gap: GitHub's cloud coding agent documents no user-only mechanism, so it may still pick
+the skill autonomously.
 
 ## Validate a brief
 
