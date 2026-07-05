@@ -1,5 +1,12 @@
 # socratic-method
 
+[![CI](https://github.com/grammy-jiang/socratic-method/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/grammy-jiang/socratic-method/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/socratic-method)](https://pypi.org/project/socratic-method/)
+[![Python](https://img.shields.io/pypi/pyversions/socratic-method)](https://pypi.org/project/socratic-method/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+![Agent skill](https://img.shields.io/badge/agent%20skill-Claude%20Code%20%7C%20Codex%20%7C%20Copilot-8A2BE2)
+![Invocation](https://img.shields.io/badge/invocation-manual--only-orange)
+
 A **Socratic questioning skill for coding agents** — Claude Code, OpenAI Codex, and
 GitHub Copilot — packaged with a one-command installer and a deterministic artifact
 validator.
@@ -19,6 +26,35 @@ The skill was authored and hardened in
 grounded review plus a six-cell adversarial behavioral eval (examiner vs. scripted user
 simulator, deterministic graders + independent judge), which caught and fixed real
 behavior gaps static review missed. The eval harness ships in this repo under `evals/`.
+
+## For AI agents
+
+This README is written for you too. The 30-second version:
+
+```bash
+pip install socratic-method   # or: pip install git+https://github.com/grammy-jiang/socratic-method
+socratic-method setup         # auto-detects Claude Code / Codex / Copilot; exits 1 if none detected
+socratic-method status        # verify what landed where before claiming success
+```
+
+Special properties to know before acting:
+
+- **The skill never auto-triggers.** It is manual-invocation-only on every platform
+  (`/socratic-method …` in Claude Code and Copilot, `$socratic-method` in Codex) and
+  costs zero context tokens until invoked. If it seems inactive, that is by design —
+  invoke it explicitly rather than rephrasing the prompt to bait it.
+- **Output contract:** a session must end with a brief at
+  `notes/idea-briefs/<slug>-YYYYMMDD.md` that passes
+  `socratic-method validate <file>` (exit 0 = valid; exit 1 prints `ERROR:` lines).
+- **Installer semantics:** `setup` is idempotent and refuses to overwrite a locally
+  modified install without `--force`. Careful: `uninstall` with no targets removes the
+  skill for ALL platforms, including locally modified copies.
+- **Never hand-edit an installed copy** (e.g. `.claude/skills/socratic-method/`) — the
+  content hash flips the install to `partial-or-modified` and blocks future `setup`
+  runs. The canonical source is `src/socratic_method/assets/` in this repo.
+- Working on this repository itself? Read [CLAUDE.md](CLAUDE.md) (authoritative agent
+  guide) or [AGENTS.md](AGENTS.md) (summary) first: the idea-brief format is enforced
+  in lockstep across six files, and the shipped `SKILL.md` must never be reformatted.
 
 ## Install
 
