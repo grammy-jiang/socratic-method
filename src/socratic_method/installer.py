@@ -2,14 +2,19 @@
 
 Design rules (inherited from the skill's own eval-hardened history):
 
+- **Symlink by default.** ``install`` creates soft links to the packaged assets, so
+  upgrading the package updates every install automatically. ``copy=True`` (CLI
+  ``--copy``) writes real file copies instead, and any target where a symlink cannot
+  be created (no durable asset path, or an OS that forbids symlinks) silently falls
+  back to a copy of the same content.
 - **Idempotent.** Every managed file is compared by content before writing;
   an identical install is reported "up to date", never rewritten.
 - **Never clobber local edits silently.** A file that differs from the packaged
   version requires ``force=True`` to overwrite.
-- **Verify before claiming.** After writing, every file is read back from disk and
-  compared to the packaged content; "installed" is only reported when the read-back
-  matches. A claimed install with no verified file is the failure mode this skill
-  exists to prevent.
+- **Verify before claiming.** After writing, every file is read back from disk
+  (through the link, for symlinks) and compared to the packaged content;
+  "installed" is only reported when the read-back matches. A claimed install with
+  no verified file is the failure mode this skill exists to prevent.
 
 Platform skill directories (data-driven so corrections are one-line; grounded in the
 platform research of the agent-skills-advisor corpus — see README for caveats):
@@ -26,6 +31,7 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
+import os
 import shutil
 from dataclasses import dataclass
 from importlib.resources import files
@@ -117,6 +123,21 @@ def packaged_content(rel: str) -> bytes:
     return files("socratic_method").joinpath(f"assets/{rel}").read_bytes()
 
 
+def asset_path(rel: str) -> Path | None:
+    """Durable filesystem path of a packaged asset, or None if there isn't one.
+
+    Symlinks need a real, stable file to point at. A normal wheel/editable install
+    provides one; an importer that only exposes assets virtually (e.g. a zipapp)
+    does not — returning None there makes ``install`` fall back to copying.
+    """
+    traversable = files("socratic_method").joinpath(f"assets/{rel}")
+    try:
+        path = Path(os.fspath(traversable))  # type: ignore[arg-type]
+    except TypeError:
+        return None
+    return path if path.is_file() else None
+
+
 def _digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
@@ -176,6 +197,7 @@ def install(
     *,
     force: bool = False,
     dry_run: bool = False,
+    copy: bool = False,
 ) -> Action:
     platform = PLATFORMS[platform_key]
     target = skill_dir(platform, scope, root, home)
@@ -194,7 +216,9 @@ def install(
             )
 
     state = install_state(target)
-    if state == "up-to-date":
+    if state == "up-to-date" and not force:
+        # force still rewrites an up-to-date install: it is the way to switch an
+        # install between symlink and copy mode (same content, different mechanism).
         return Action(
             platform_key, scope, target, "up-to-date", "all files match the packaged version"
         )
@@ -209,14 +233,30 @@ def install(
             f"({', '.join(differing) or 'partial'}); re-run with --force to overwrite",
         )
     if dry_run:
-        return Action(platform_key, scope, target, "would-install", f"{len(MANAGED_FILES)} files")
+        mode = "copies" if copy else "symlinks"
+        return Action(
+            platform_key, scope, target, "would-install", f"{len(MANAGED_FILES)} files ({mode})"
+        )
 
+    linked, copied = [], []
     for rel in MANAGED_FILES:
         dst = target / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
+        # Remove any existing file OR stale/dangling symlink first — writing through
+        # a pre-existing link would modify the package's own asset, never the install.
+        dst.unlink(missing_ok=True)
+        src = None if copy else asset_path(rel)
+        if src is not None:
+            try:
+                dst.symlink_to(src)
+                linked.append(rel)
+                continue
+            except OSError:  # e.g. a filesystem/OS that forbids symlinks
+                pass
         dst.write_bytes(packaged_content(rel))
+        copied.append(rel)
 
-    # Verify before claiming: read back every file from disk.
+    # Verify before claiming: read back every file (through the link) from disk.
     unverified = [rel for rel in MANAGED_FILES if file_state(target, rel) != "up-to-date"]
     if unverified:
         return Action(
@@ -226,21 +266,29 @@ def install(
             "blocked",
             f"post-write verification FAILED for: {', '.join(unverified)}",
         )
+    parts = []
+    if linked:
+        parts.append(f"{len(linked)} symlinked")
+    if copied:
+        parts.append(f"{len(copied)} copied")
     return Action(
         platform_key,
         scope,
         target,
         "installed",
-        f"{len(MANAGED_FILES)} files written and read back",
+        f"{' + '.join(parts)}, read back and verified",
     )
 
 
 def uninstall(
     platform_key: str, scope: str, root: Path, home: Path, *, dry_run: bool = False
 ) -> Action:
+    """Revert an install (CLI: ``remove``, with ``uninstall`` kept as an alias)."""
     platform = PLATFORMS[platform_key]
     target = skill_dir(platform, scope, root, home)
-    if install_state(target) == "not-installed":
+    # Dangling symlinks read as 'missing' to install_state; still clean them up.
+    leftovers = any((target / rel).is_symlink() for rel in MANAGED_FILES)
+    if install_state(target) == "not-installed" and not leftovers:
         return Action(platform_key, scope, target, "not-installed")
     if dry_run:
         return Action(platform_key, scope, target, "would-install", "would remove managed files")

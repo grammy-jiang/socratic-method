@@ -66,6 +66,22 @@ def test_setup_all_then_uninstall(tmp_path, monkeypatch):
     assert not (tmp_path / ".claude/skills/socratic-method").exists()
 
 
+def test_remove_is_the_uninstall_alias(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    (tmp_path / "home").mkdir()
+    assert main(["setup", "claude", "--root", str(tmp_path)]) == 0
+    assert main(["remove", "claude", "--root", str(tmp_path)]) == 0
+    assert not (tmp_path / ".claude/skills/socratic-method").exists()
+
+
+def test_setup_copy_flag_writes_regular_files(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    (tmp_path / "home").mkdir()
+    assert main(["setup", "claude", "--copy", "--root", str(tmp_path)]) == 0
+    skill_md = tmp_path / ".claude/skills/socratic-method/SKILL.md"
+    assert skill_md.is_file() and not skill_md.is_symlink()
+
+
 def test_unknown_target_rejected(tmp_path):
     with pytest.raises(SystemExit):
         main(["setup", "cursor", "--root", str(tmp_path)])

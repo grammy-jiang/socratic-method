@@ -1,10 +1,11 @@
 """socratic-method command-line interface.
 
 Subcommands:
-    setup      install/refresh the skill for Claude Code, Codex, and/or Copilot
-    status     show what is installed where, and whether it matches this package
-    uninstall  remove managed skill files
-    validate   check an idea brief against the idea-brief-v1 format
+    setup     install/refresh the skill for Claude Code, Codex, and/or Copilot
+              (symlinks by default; --copy for real file copies)
+    status    show what is installed where, and whether it matches this package
+    remove    revert what setup did (alias: uninstall)
+    validate  check an idea brief against the idea-brief-v1 format
 """
 
 from __future__ import annotations
@@ -79,12 +80,22 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="overwrite an existing install that differs from this package",
     )
+    p_setup.add_argument(
+        "--copy",
+        action="store_true",
+        help="write file copies instead of symlinks (e.g. when committing the skill "
+        "directory to a repo, or on filesystems without symlink support)",
+    )
     p_setup.add_argument("--dry-run", action="store_true", help="print the plan, write nothing")
 
     p_status = sub.add_parser("status", help="show install state for every platform and scope")
     p_status.add_argument("--root", type=Path, default=Path.cwd())
 
-    p_un = sub.add_parser("uninstall", help="remove managed skill files")
+    p_un = sub.add_parser(
+        "remove",
+        aliases=["uninstall"],
+        help="revert what setup did: remove the managed skill links/files",
+    )
     p_un.add_argument("targets", nargs="*", metavar="TARGET")
     p_un.add_argument("--scope", choices=["project", "user"], default="project")
     p_un.add_argument("--root", type=Path, default=Path.cwd())
@@ -133,7 +144,13 @@ def main(argv: list[str] | None = None) -> int:
         try:
             if args.command == "setup":
                 a = install(
-                    key, args.scope, args.root, home, force=args.force, dry_run=args.dry_run
+                    key,
+                    args.scope,
+                    args.root,
+                    home,
+                    force=args.force,
+                    dry_run=args.dry_run,
+                    copy=args.copy,
                 )
             else:
                 a = uninstall(key, args.scope, args.root, home, dry_run=args.dry_run)

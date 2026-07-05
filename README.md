@@ -32,7 +32,7 @@ behavior gaps static review missed. The eval harness ships in this repo under `e
 This README is written for you too. The 30-second version:
 
 ```bash
-pip install socratic-method   # or: pip install git+https://github.com/grammy-jiang/socratic-method
+pipx install socratic-method  # from PyPI; pip works too but pipx isolates the CLI
 socratic-method setup         # auto-detects Claude Code / Codex / Copilot; exits 1 if none detected
 socratic-method status        # verify what landed where before claiming success
 ```
@@ -46,9 +46,11 @@ Special properties to know before acting:
 - **Output contract:** a session must end with a brief at
   `notes/idea-briefs/<slug>-YYYYMMDD.md` that passes
   `socratic-method validate <file>` (exit 0 = valid; exit 1 prints `ERROR:` lines).
-- **Installer semantics:** `setup` is idempotent and refuses to overwrite a locally
-  modified install without `--force`. Careful: `uninstall` with no targets removes the
-  skill for ALL platforms, including locally modified copies.
+- **Installer semantics:** `setup` symlinks the skill from the installed package by
+  default (`--copy` for real copies); it is idempotent and refuses to overwrite a
+  locally modified install without `--force`. `remove` (alias `uninstall`) reverts
+  what setup did — careful: with no targets it removes the skill for ALL platforms,
+  including locally modified copies.
 - **Never hand-edit an installed copy** (e.g. `.claude/skills/socratic-method/`) — the
   content hash flips the install to `partial-or-modified` and blocks future `setup`
   runs. The canonical source is `src/socratic_method/assets/` in this repo.
@@ -59,10 +61,20 @@ Special properties to know before acting:
 ## Install
 
 ```bash
-pip install git+https://github.com/grammy-jiang/socratic-method
-# or, without installing:
-uvx --from git+https://github.com/grammy-jiang/socratic-method socratic-method --help
+pipx install socratic-method    # recommended
+# or run it one-off without installing anything:
+uvx socratic-method --help
+# or plain pip, into whatever environment is currently active:
+pip install socratic-method
 ```
+
+Prefer [pipx](https://pipx.pypa.io/): `socratic-method` is a command-line tool, not a
+library you import, and pipx installs it into its own isolated virtualenv with just the
+`socratic-method` command on your PATH — its dependencies can never conflict with a
+project's, and `pipx upgrade socratic-method` upgrades it cleanly. All of the commands
+above install the released package from [PyPI](https://pypi.org/project/socratic-method/);
+the same wheel and sdist are attached to each
+[GitHub Release](https://github.com/grammy-jiang/socratic-method/releases).
 
 ## Set up the skill for your agents
 
@@ -77,10 +89,10 @@ socratic-method setup all
 # install into your user home instead of the current project
 socratic-method setup claude --scope user
 
-# see what would happen first / check current state / remove
+# see what would happen first / check current state / revert
 socratic-method setup --dry-run
 socratic-method status
-socratic-method uninstall claude
+socratic-method remove claude        # alias: uninstall
 ```
 
 With no targets, `setup` **auto-detects** installed agents and configures only those,
@@ -94,6 +106,16 @@ printing the concrete evidence for each detection (never a bare claim):
 
 If nothing is detected, `setup` installs nothing and tells you how to name targets
 explicitly. `setup all` bypasses detection.
+
+`setup` creates **symlinks** to the packaged assets by default, so upgrading the package
+(`pipx upgrade socratic-method`) updates every install automatically and nothing is
+duplicated on disk. Use `--copy` for real file copies instead — e.g. when you commit the
+skill directory into a repo (a symlink into your local environment is useless to
+collaborators), when you want to customize the installed copy (editing *through* a
+symlink would edit the packaged version for every install), or on filesystems without
+symlink support (where the installer falls back to copies automatically). Switch an
+existing install between modes with `setup --force [--copy]`. `remove` reverts whatever
+`setup` created — links or copies, dangling links included.
 
 `setup` is **idempotent** (content-hash comparison; an identical install reports
 "up to date"), refuses to overwrite locally modified files without `--force`, and after

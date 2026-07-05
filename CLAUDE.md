@@ -61,8 +61,10 @@ uv build && uvx twine check dist/*               # what the release build job ru
 
 `src/socratic_method/assets/SKILL.md` is the deliverable users install. Editing it:
 
-- changes the packaged sha256, so every existing install everywhere flips to
-  `partial-or-modified` and the next `setup` returns `blocked` (exit 1) until `--force`;
+- changes the packaged sha256: copy-mode installs everywhere flip to
+  `partial-or-modified` and their next `setup` returns `blocked` (exit 1) until
+  `--force`, while symlinked installs (the default) see the edit immediately and
+  keep reporting `up-to-date`;
 - is immediately picked up by evals — `run_eval.py` copies the *working tree* assets into
   each cell's sandbox, so evals always test uncommitted edits;
 - must never be reformatted by tooling (see pre-commit policy above).
@@ -71,11 +73,16 @@ Never commit an installed copy of the product skill into this repo's own
 `.claude/skills/socratic-method/` — the canonical source is `assets/`; an installed copy
 here would silently drift. This repo's `.claude/skills/` is for maintainer skills only.
 
-CLI behavior worth remembering: `setup` with no targets auto-detects and exits 1 if
-nothing is detected, but `uninstall` with no targets expands to ALL platforms — and
-removes managed files even if locally modified. Copilot has no user scope
-(`user_dir=None`), and project-scope Copilot is skipped when `.claude/skills/` already
-covers the repo (Copilot reads that path too).
+CLI behavior worth remembering: `setup` symlinks the packaged assets by default
+(`--copy` writes real copies; symlink failure auto-falls-back to a copy; `--force`
+also switches an existing install between modes). `setup` with no targets auto-detects
+and exits 1 if nothing is detected, but `remove` (canonical name; `uninstall` is the
+alias) with no targets expands to ALL platforms — and removes managed files even if
+locally modified, plus dangling symlinks. Copilot has no user scope (`user_dir=None`),
+and project-scope Copilot is skipped when `.claude/skills/` already covers the repo
+(Copilot reads that path too). Never write through an installed symlink in code or
+tests — it edits the packaged asset itself (`install()` unlinks before writing for
+exactly this reason; `tests/test_installer.py` pins it).
 
 ## Changing the idea-brief format = lockstep edit
 

@@ -6,8 +6,10 @@ import pytest
 from socratic_method.installer import (
     MANAGED_FILES,
     PLATFORMS,
+    asset_path,
     install,
     install_state,
+    packaged_content,
     skill_dir,
     status,
     uninstall,
@@ -37,6 +39,10 @@ def test_modified_install_blocked_without_force(roots):
     root, home = roots
     install("claude", "project", root, home)
     target = skill_dir(PLATFORMS["claude"], "project", root, home)
+    # Replace the symlink with a locally modified real file (writing through the
+    # link would edit the packaged asset itself, which is exactly what install()
+    # must never do — see test_force_reinstall_never_writes_through_links).
+    (target / "SKILL.md").unlink()
     (target / "SKILL.md").write_text("locally edited")
     a = install("claude", "project", root, home)
     assert a.outcome == "blocked"
@@ -99,6 +105,53 @@ def test_uninstall_preserves_user_files(roots):
     keeper.write_text("mine")
     uninstall("claude", "project", root, home)
     assert keeper.exists()  # user file and its dir survive
+
+
+def test_install_creates_symlinks_to_packaged_assets(roots):
+    root, home = roots
+    a = install("claude", "project", root, home)
+    assert a.outcome == "installed"
+    assert "symlinked" in a.detail
+    target = skill_dir(PLATFORMS["claude"], "project", root, home)
+    for rel in MANAGED_FILES:
+        dst = target / rel
+        assert dst.is_symlink()
+        assert dst.resolve() == asset_path(rel).resolve()
+
+
+def test_copy_mode_writes_regular_files(roots):
+    root, home = roots
+    a = install("claude", "project", root, home, copy=True)
+    assert a.outcome == "installed"
+    assert "copied" in a.detail and "symlinked" not in a.detail
+    target = skill_dir(PLATFORMS["claude"], "project", root, home)
+    for rel in MANAGED_FILES:
+        assert (target / rel).is_file() and not (target / rel).is_symlink()
+    assert install_state(target) == "up-to-date"
+
+
+def test_force_reinstall_never_writes_through_links(roots):
+    # --force over an existing symlinked install must replace the links, not
+    # write through them into the package's own assets.
+    root, home = roots
+    install("claude", "project", root, home)
+    packaged_before = packaged_content("SKILL.md")
+    a = install("claude", "project", root, home, force=True, copy=True)
+    assert a.outcome == "installed"
+    assert packaged_content("SKILL.md") == packaged_before
+    target = skill_dir(PLATFORMS["claude"], "project", root, home)
+    assert not (target / "SKILL.md").is_symlink()
+
+
+def test_uninstall_cleans_dangling_symlinks(roots):
+    root, home = roots
+    install("claude", "project", root, home)
+    target = skill_dir(PLATFORMS["claude"], "project", root, home)
+    for rel in MANAGED_FILES:  # simulate the package vanishing (e.g. pipx uninstall)
+        (target / rel).unlink()
+        (target / rel).symlink_to(root / "gone" / rel)
+    assert uninstall("claude", "project", root, home).outcome == "removed"
+    assert not target.exists()
 
 
 def test_status_covers_all_platform_scopes(roots):
