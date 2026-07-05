@@ -16,6 +16,10 @@ on:
   push:
     tags:
       - "v*"
+  # Fallback for tags created by the "Tag release" helper workflow: tags pushed
+  # with the Actions GITHUB_TOKEN do not fire tag-push events, so dispatch this
+  # workflow manually with ref = the new tag (e.g. v0.1.0).
+  workflow_dispatch:
 
 jobs:
   build:

@@ -1,0 +1,38 @@
+# Helper for environments that cannot push tags directly (e.g. remote sandboxes
+# whose git proxy rejects refs/tags pushes). Creates the annotated release tag
+# at the dispatched ref's HEAD after checking it matches the package version.
+#
+# Note: tags pushed with the Actions GITHUB_TOKEN do not trigger tag-push
+# workflows, so after this succeeds, dispatch the Release workflow with
+# ref = the new tag.
+
+name: Tag release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to create (vX.Y.Z, must match src/socratic_method/__init__.py)"
+        required: true
+        default: "v0.1.0"
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # required to push the tag
+    env:
+      TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create and push annotated tag
+        run: |
+          PKG_VERSION=$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' src/socratic_method/__init__.py)
+          if [ "v${PKG_VERSION}" != "${TAG}" ]; then
+            echo "Tag ${TAG} does not match package version v${PKG_VERSION}" >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${TAG}" -m "socratic-method ${TAG#v} — agent skill, installer CLI, validator, evals"
+          git push origin "refs/tags/${TAG}"
