@@ -206,7 +206,7 @@ def run_cell(scenario: dict, args, report_dir: Path) -> dict:
         # Persist after every turn so a mid-cell failure (rate limit, timeout) still
         # leaves the dialogue-so-far on disk — the evidence trail this run exists for.
         (cell_dir / "transcript.json").write_text(
-            json.dumps(transcript, indent=2, ensure_ascii=False), encoding="utf-8"
+            json.dumps(transcript, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
         )
 
     for turn in range(1, int(scenario.get("max_turns", 16)) + 1):
@@ -267,24 +267,25 @@ def run_cell(scenario: dict, args, report_dir: Path) -> dict:
         judge = {"parse_error": True, "raw": judge_raw[-2000:]}
 
     # harness_leak is a deterministic sandbox-boundary defect — it hard-fails the cell.
-    # premature_solutioning is a NEW judge-based backstop for the skill's #1 guardrail
-    # (the literal-marker grader misses paraphrases). It is kept REPORT-ONLY (surfaced in
-    # the result/summary below, not gating `passed`) until a real matrix run confirms it
-    # doesn't misfire on O1's legitimate "record as-is" decline. Promote it to a hard gate
-    # by adding `and not judge.get("premature_solutioning", True)` here once validated.
+    # premature_solutioning is the judge-based backstop for the skill's #1 guardrail (the
+    # literal-marker grader misses paraphrases), fail-closed like fabrication. Promoted
+    # from report-only to a hard gate after a live O1/N1/E1/N3 run showed it False on every
+    # cell — no misfire, including on O1's legitimate "record as-is" decline. Still
+    # surfaced in the summary's `solu?` column so a failure's cause is visible at a glance.
     passed = (
         all(g["passed"] for g in grader_results)
         and judge.get("expected_behavior_met", False)
         and not judge.get("fabrication", True)
+        and not judge.get("premature_solutioning", True)
         and not harness_leak
     )
 
     _persist_transcript()
     (cell_dir / "graders.json").write_text(
-        json.dumps(grader_results, indent=2, ensure_ascii=False), encoding="utf-8"
+        json.dumps(grader_results, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
     (cell_dir / "judge.json").write_text(
-        json.dumps(judge, indent=2, ensure_ascii=False), encoding="utf-8"
+        json.dumps(judge, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
     if brief_path:
         shutil.copy2(brief_path, cell_dir / "brief.md")
@@ -294,7 +295,7 @@ def run_cell(scenario: dict, args, report_dir: Path) -> dict:
         "name": scenario["name"],
         "passed": passed,
         "harness_leak": harness_leak,
-        # Report-only (not folded into `passed` yet — see the passed computation above).
+        # Also gates `passed` (see above); surfaced here and in the summary's solu? column.
         "judge_premature_solutioning": judge.get("premature_solutioning"),
         "graders": {g["grader"]: g["passed"] for g in grader_results},
         "judge_expected_behavior_met": judge.get("expected_behavior_met"),
@@ -352,7 +353,8 @@ def main() -> int:
     for r in results:
         graders = ", ".join(f"{k}={'P' if v else 'F'}" for k, v in r.get("graders", {}).items())
         leak = "LEAK" if r.get("harness_leak") else ""
-        # Report-only judge signal: flag it for review, but it does not fail the cell yet.
+        # Judge's premature-solutioning flag (a hard-fail gate); shown so a failing cell's
+        # cause is visible at a glance.
         solu = "SOLU?" if r.get("judge_premature_solutioning") else ""
         summary_lines.append(
             f"| {r['cell']} | {r['name']} | {'PASS' if r.get('passed') else 'FAIL'} "
@@ -361,7 +363,7 @@ def main() -> int:
         )
     (report_dir / "summary.md").write_text("\n".join(summary_lines) + "\n", encoding="utf-8")
     (report_dir / "summary.json").write_text(
-        json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8"
+        json.dumps(results, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
     print(f"\nReports: {report_dir}")
     n_pass = sum(1 for r in results if r.get("passed"))

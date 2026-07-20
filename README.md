@@ -179,7 +179,8 @@ python evals/run_eval.py               # full matrix — spawns ~30-60 headless 
 
 Requires the `claude` CLI and real tokens; run cells individually while iterating. A cell
 passes only when **all** deterministic graders pass AND the judge confirms the expected
-behavior with no fabrication.
+behavior with no fabrication and no premature solutioning, AND the brief stayed inside its
+sandbox (no harness leak).
 
 ## Development
 

@@ -117,7 +117,8 @@ python evals/run_eval.py                # full matrix — ~30-60 headless `claud
 - Requires an authenticated `claude` CLI; model choice is flags-only
   (`--model`/`--sim-model`/`--judge-model`, defaults sonnet/sonnet/opus). No env vars.
 - A cell passes only when all deterministic graders pass AND the judge reports
-  `expected_behavior_met: true` with `fabrication: false`.
+  `expected_behavior_met: true`, `fabrication: false`, and `premature_solutioning: false`,
+  AND no harness sandbox leak was detected.
 - **Never wire evals into CI** — real tokens plus LLM variance; CI runs lint, pytest, CLI
   smoke, and build only.
 - Grader thresholds are calibrated, not arbitrary (e.g. `turn_discipline` fires at 3+ `?`;
