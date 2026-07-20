@@ -14,7 +14,14 @@ on:
       tag:
         description: "Tag to create (vX.Y.Z, must match src/socratic_method/__init__.py)"
         required: true
-        default: "v0.1.0"
+        # No default on purpose: a stale default (it once read v0.1.0) silently offers the
+        # wrong version. Require an explicit tag each dispatch; the step below hard-fails
+        # on any mismatch with __version__.
+
+# One tagging run per requested tag; never cancel a tag push mid-flight.
+concurrency:
+  group: tag-release-${{ github.event.inputs.tag }}
+  cancel-in-progress: false
 
 jobs:
   tag:
@@ -24,7 +31,9 @@ jobs:
     env:
       TAG: ${{ inputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      # persist-credentials stays at its default (true): this job pushes the tag using the
+      # checkout-provided token. Pinned to a commit SHA like every other action in this repo.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Create and push annotated tag
         run: |
           PKG_VERSION=$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' src/socratic_method/__init__.py)

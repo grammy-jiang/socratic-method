@@ -1,0 +1,15 @@
+# Keeps the SHA-pinned GitHub Actions from silently rotting: Dependabot bumps both the
+# commit SHA and its trailing `# vX.Y.Z` comment when a new release lands, so pinning for
+# supply-chain safety doesn't cost us security patches. Grouped into one PR to cut noise.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    groups:
+      github-actions:
+        patterns:
+          - "*"
