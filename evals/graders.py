@@ -460,6 +460,48 @@ def session_claims_accurate(transcript, brief_path, scenario):
     }
 
 
+_FALSIFICATION_MARKERS = (
+    "change your mind",
+    "change my mind",
+    "wrong call",
+    "prove you wrong",
+    "prove it wrong",
+    "prove this wrong",
+    "falsif",  # falsify / falsifiable / falsification
+    "disconfirm",
+    "what would you have to see",
+    "what would have to be true for",
+    "what would tell you",
+    "what would convince you",
+    "how would you know if",
+    "what evidence would",
+    "what would make this the wrong",
+)
+
+
+def falsification_probe_asked(transcript, brief_path, scenario):
+    """`stress` mode mandates at least one falsification/disconfirming probe (SKILL.md:
+    'at least one disconfirming probe belongs in every stress pass', scheduled in
+    Sequencing). Deterministic sensor that some pre-synthesis examiner message actually
+    asked one. The harder, inferential half — that a clean, concrete falsifier is NOT then
+    mislabeled 'faith-based' / unfalsifiable — is left to the judge (see the cell's
+    judge_focus), matching the graders/judge split used everywhere else here."""
+    hits = [
+        f"turn {m['turn']}"
+        for m in _pre_synthesis_examiner_msgs(transcript)
+        if any(marker in m["text"].lower() for marker in _FALSIFICATION_MARKERS)
+    ]
+    return {
+        "grader": "falsification_probe_asked",
+        "passed": bool(hits),
+        "detail": (
+            f"falsification/disconfirming probe asked ({', '.join(hits)})"
+            if hits
+            else "no falsification/disconfirming probe found before synthesis"
+        ),
+    }
+
+
 GRADERS = {
     fn.__name__: fn
     for fn in (
@@ -473,6 +515,7 @@ GRADERS = {
         dispute_loop_honored,
         scope_check_fired,
         session_claims_accurate,
+        falsification_probe_asked,
     )
 }
 

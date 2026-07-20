@@ -12,6 +12,7 @@ from graders import (
     aporia_open_questions,
     brief_valid,
     dispute_loop_honored,
+    falsification_probe_asked,
     no_premature_solutioning,
     quick_cadence,
     refutation_mechanics,
@@ -217,6 +218,23 @@ def test_dispute_loop_honored_pass_and_fail():
     r = dispute_loop_honored(bad, None, {})
     assert r["passed"] is False
     assert "unconfirmed thesis" in r["detail"]
+
+
+def test_falsification_probe_asked_pass_and_fail():
+    asked = [_t("examiner", 1, "What would you have to see for this to be the wrong call?")]
+    assert falsification_probe_asked(asked, None, {})["passed"] is True
+    # A synthesized brief-echo after synthesis must not count — only pre-synthesis probes.
+    post = [
+        _t("examiner", 1, "Who is this for, and what do they do today?"),
+        _t(
+            "examiner",
+            2,
+            "Verdict: sharpened. schema: idea-brief-v1 — what would disconfirm it: TBD",
+        ),
+    ]
+    r = falsification_probe_asked(post, None, {})
+    assert r["passed"] is False
+    assert "no falsification" in r["detail"]
 
 
 def test_session_claims_accurate_pass_and_fail():
