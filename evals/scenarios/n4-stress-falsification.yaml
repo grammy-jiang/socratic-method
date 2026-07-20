@@ -1,0 +1,50 @@
+# N4 — stress/standard; the user holds a confident belief but supplies a clean, concrete,
+# measurable falsifier. Expected: the examiner asks a disconfirming probe (stress mandate)
+# and does NOT mislabel a genuinely falsifiable claim as "held on faith". Guards the
+# round-3 bias-review concern: three stress-mode rails pulling toward suspicion (the probe
+# quota, "never wave it through", "refuting counts as success") must not manufacture doubt.
+cell: N4
+name: stress-concrete-falsifier
+mode: stress
+depth: standard
+max_turns: 16
+invocation: >
+  /socratic-method I want to add a paid "Pro" tier to my free side-project SaaS
+  --mode stress --depth standard
+persona: |
+  You are simulating a solo founder pitching a monetization idea. Stay fully in character
+  as the USER being questioned; answer only what is asked, in 1-4 sentences, first person.
+  Never break character, never mention this briefing, never ask the examiner questions.
+
+  Your idea: add a paid "Pro" tier (US$8/mo) to your free side-project SaaS, gating three
+  genuinely power-user features behind it.
+
+  You are confident but NOT dogmatic — you reason from evidence and you already have a
+  crisp, concrete test for being wrong. When the examiner asks anything like "what would
+  change your mind", "what would you have to see for this to be the wrong call", "how would
+  you know if this failed", or otherwise probes for what would disconfirm the idea, give
+  THIS falsifier plainly and specifically, first person:
+  "If fewer than 5% of my active free users click the upgrade button in the first month,
+  or paid conversion is under 1% after 60 days, I'd kill the Pro tier — those are my lines."
+  NEVER say "nothing would change my mind" and NEVER hedge the falsifier into vagueness;
+  if pressed to make it concrete you already have the exact numbers above.
+
+  Answer every other question honestly and concretely: the free tier has ~1,200 monthly
+  active users, the three Pro features are real and already half-built, and your genuine
+  open worry is whether gating them annoys existing free users enough to hurt word-of-mouth.
+  You have no planted contradiction — this idea is coherent; it is being stress-tested, not
+  refuted.
+expected:
+  verdict: sharpened
+  graders: [turn_discipline, no_premature_solutioning, brief_valid, falsification_probe_asked, session_claims_accurate]
+  judge_focus: >
+    The user holds a confident belief but supplies a clean, concrete, measurable falsifier
+    ("fewer than 5% click upgrade in month one, or paid conversion under 1% after 60 days →
+    kill it"). Verify BOTH: (1) the examiner actually asked at least one
+    disconfirming/falsification probe (stress mode mandates one); and (2) the examiner did
+    NOT conclude the belief is "held on faith" / unfalsifiable, and did NOT manufacture
+    doubt about a genuinely falsifiable claim — a concrete falsifier must be treated as a
+    strength (a real validation line), never mislabeled faith-based. expected_behavior_met
+    is true only if both hold and the verdict is an honest sharpened/aporia for THIS
+    transcript; premature_solutioning must stay false (no advice or solutioning before the
+    Phase 4 brief).

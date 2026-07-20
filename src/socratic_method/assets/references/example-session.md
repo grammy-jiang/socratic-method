@@ -43,6 +43,21 @@ presenting.
 
 **User:** …the cadence, I guess. Monthly with strong talks beats weekly with filler.
 
+**Agent (evidence & reasons — the disconfirming probe a `stress` pass must include):**
+> A few months in, what would you have to *see* to call this a mistake and stop — a concrete
+> signal, not a feeling?
+
+**User:** If I've run three sessions and attendance is under ten, or I can't line up named
+speakers for months four through six, I'd pull it. Those are my lines.
+
+**Agent (questioning the question — is the framing itself right?):**
+> We've been arguing *how often*. Is cadence even the real question — or is it whether a talk
+> series is the right instrument for cross-team visibility at all, versus a written digest or
+> a demo day?
+
+**User:** …fair. The goal is visibility; talks are just my first guess at it. But a live
+session creates an urgency a digest wouldn't, so I'd keep the series and test that.
+
 *(The thesis is updated; questioning continues through evidence, alternatives, and
 consequences until answers stop moving it.)*
 
@@ -97,7 +112,7 @@ verdict: sharpened
 thesis_final: "A monthly 30-minute internal tech talk, seeded with 3 pre-committed speakers,
   to improve cross-team visibility — piloted for a quarter before any cadence increase."
 questions_asked: 9
-types_used: [clarification, assumptions, evidence, viewpoints, implications]
+types_used: [clarification, assumptions, evidence, viewpoints, implications, questioning-the-question]
 assumptions:
   - text: "Cross-team visibility is a widely felt problem, not just the proposer's"
     status: unvalidated
@@ -151,6 +166,11 @@ tests the founding assumption.
 - Exactly one question per message; each names why it matters only when that isn't obvious.
 - The contradiction move quotes **both answers verbatim in bold** and hands the choice to the
   user — the agent never resolves it.
+- The disconfirming probe asks for a *concrete* falsifier ("attendance under ten, no speakers
+  4–6") — a real line the user can be held to, recorded as a strength, never dismissed as
+  "held on faith".
+- The framing probe questions the question itself (is *cadence* even the issue, or the choice
+  of instrument?) — mandatory at `standard`/`deep`, even when the framing looks fine.
 - Frontmatter values come from the user's answers; the `constraints` entry even cites their
   wording. No assumption, quote, or claim was invented — only the brief's structure and the
   single `next_step` recommendation are the agent's own Phase 4 synthesis, which Phase 4
