@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from socratic_method.validator import validate_idea_brief
+from socratic_method.validator import split_frontmatter, validate_idea_brief
 
 GOLDEN = Path(__file__).parent.parent / "evals" / "fixtures" / "tech-talk-series-20260704.md"
 
@@ -66,3 +66,76 @@ def test_missing_frontmatter_caught(tmp_path):
     p = tmp_path / "x.md"
     p.write_text("# Idea brief: nope\n")
     assert validate_idea_brief(p) == ["No YAML frontmatter block (file must start with ---)"]
+
+
+def test_colliding_claims_non_list_is_reported_not_raised(tmp_path):
+    # Regression: `verdict: refuted` with a scalar colliding_claims (`colliding_claims: 5`)
+    # used to raise TypeError from enumerate(); it must return the schema error instead.
+    p = tmp_path / GOLDEN.name
+    p.write_text(
+        GOLDEN.read_text(encoding="utf-8").replace(
+            "verdict: sharpened", "verdict: refuted\ncolliding_claims: 5"
+        ),
+        encoding="utf-8",
+    )
+    errors = validate_idea_brief(p)  # must return, never raise
+    assert any("colliding_claims" in e and "array" in e for e in errors)
+
+
+def test_body_divider_line_is_preserved():
+    # Regression: split_frontmatter used to eat body lines beginning with "---".
+    fm, body = split_frontmatter("---\na: 1\n---\nbefore\n---\nafter\n")
+    assert fm == "a: 1"
+    assert "\n---\n" in body and "before" in body and "after" in body
+
+
+def test_non_utf8_file_returns_read_error(tmp_path):
+    # A non-UTF-8 file must degrade to a Read error, not crash the CLI.
+    p = tmp_path / "utf16-20260704.md"
+    p.write_bytes(GOLDEN.read_text(encoding="utf-8").encode("utf-16"))
+    errors = validate_idea_brief(p)
+    assert len(errors) == 1 and errors[0].startswith("Read error:")
+
+
+def test_bom_prefixed_file_is_still_valid(tmp_path):
+    # A leading UTF-8 BOM must not be mistaken for missing frontmatter.
+    p = tmp_path / GOLDEN.name
+    p.write_bytes(GOLDEN.read_text(encoding="utf-8").encode("utf-8-sig"))
+    assert validate_idea_brief(p) == []
+
+
+def test_missing_file_returns_read_error(tmp_path):
+    errors = validate_idea_brief(tmp_path / "does-not-exist.md")
+    assert len(errors) == 1 and errors[0].startswith("Read error:")
+
+
+def test_malformed_yaml_frontmatter_reported(tmp_path):
+    p = tmp_path / "x-20260704.md"
+    p.write_text("---\nfoo: 'unterminated\n---\n# body\n", encoding="utf-8")
+    assert any(e.startswith("Frontmatter YAML parse error:") for e in validate_idea_brief(p))
+
+
+def test_non_mapping_frontmatter_reported(tmp_path):
+    p = tmp_path / "x-20260704.md"
+    p.write_text("---\n- a\n- b\n---\n# body\n", encoding="utf-8")
+    assert validate_idea_brief(p) == ["Frontmatter is not a mapping"]
+
+
+def test_unterminated_frontmatter_reported(tmp_path):
+    p = tmp_path / "x-20260704.md"
+    p.write_text("---\nschema: idea-brief-v1\n", encoding="utf-8")
+    assert validate_idea_brief(p) == ["No YAML frontmatter block (file must start with ---)"]
+
+
+def test_title_header_prefix_is_intentional(tmp_path):
+    # The "# Idea brief:" header is matched by prefix on purpose (the title carries a
+    # free-text name suffix). Changing the suffix must still validate — this pins WHY
+    # the header check uses startswith rather than exact equality.
+    p = tmp_path / GOLDEN.name
+    p.write_text(
+        GOLDEN.read_text(encoding="utf-8").replace(
+            "# Idea brief: internal tech-talk series", "# Idea brief: something entirely different"
+        ),
+        encoding="utf-8",
+    )
+    assert validate_idea_brief(p) == []

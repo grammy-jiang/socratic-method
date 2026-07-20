@@ -36,6 +36,7 @@ def _print_action(a) -> None:
         "up-to-date": "=",
         "skipped": "~",
         "would-install": ">",
+        "would-remove": ">",
         "blocked": "!",
         "removed": "-",
         "not-installed": " ",
@@ -105,7 +106,6 @@ def main(argv: list[str] | None = None) -> int:
     p_val.add_argument("brief", type=Path, help="path to the brief markdown file")
 
     args = parser.parse_args(argv)
-    home = Path.home()
 
     if args.command == "validate":
         errors = validate_idea_brief(args.brief)
@@ -114,6 +114,8 @@ def main(argv: list[str] | None = None) -> int:
         if not errors:
             print(f"OK: {args.brief} is a valid idea-brief-v1")
         return 0 if not errors else 1
+
+    home = Path.home()  # only the install-side commands below need it
 
     if args.command == "status":
         print(f"socratic-method {__version__} — install status (project root: {args.root})")

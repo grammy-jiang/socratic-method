@@ -164,3 +164,90 @@ def test_status_covers_all_platform_scopes(roots):
     by_key = {(a.platform, a.scope): a.outcome for a in entries}
     assert by_key[("claude", "project")] == "up-to-date"
     assert by_key[("codex", "project")] == "not-installed"
+
+
+def test_uninstall_dry_run_previews_and_writes_nothing(roots):
+    root, home = roots
+    install("claude", "project", root, home)
+    target = skill_dir(PLATFORMS["claude"], "project", root, home)
+    a = uninstall("claude", "project", root, home, dry_run=True)
+    assert a.outcome == "would-remove"  # not "would-install" (regression)
+    for rel in MANAGED_FILES:
+        assert (target / rel).exists()  # preview removed nothing
+
+
+def test_uninstall_removes_locally_modified_file(roots):
+    # remove is deliberately force-free: it cleans up even a locally-edited managed file.
+    root, home = roots
+    install("claude", "project", root, home)
+    target = skill_dir(PLATFORMS["claude"], "project", root, home)
+    (target / "SKILL.md").unlink()
+    (target / "SKILL.md").write_text("locally edited")
+    assert uninstall("claude", "project", root, home).outcome == "removed"
+    assert not (target / "SKILL.md").exists()
+
+
+def test_install_post_write_verification_failure_blocks(roots, monkeypatch):
+    # The readback-and-compare step is "the failure mode this skill exists to prevent";
+    # drive it by reporting missing pre-write (so install proceeds) then differs post-write.
+    root, home = roots
+    seen = {"n": 0}
+
+    def fake_file_state(target, rel):
+        seen["n"] += 1
+        return "missing" if seen["n"] <= len(MANAGED_FILES) else "differs"
+
+    monkeypatch.setattr("socratic_method.installer.file_state", fake_file_state)
+    a = install("claude", "project", root, home)
+    assert a.outcome == "blocked"
+    assert "post-write verification FAILED" in a.detail
+
+
+def test_install_falls_back_to_copy_when_asset_path_missing(roots, monkeypatch):
+    # No durable asset path (e.g. a zipapp import) must fall back to copying, not fail.
+    root, home = roots
+    monkeypatch.setattr("socratic_method.installer.asset_path", lambda rel: None)
+    a = install("claude", "project", root, home)
+    assert a.outcome == "installed" and "copied" in a.detail
+    target = skill_dir(PLATFORMS["claude"], "project", root, home)
+    for rel in MANAGED_FILES:
+        assert (target / rel).is_file() and not (target / rel).is_symlink()
+
+
+def test_install_falls_back_to_copy_on_symlink_oserror(roots, monkeypatch):
+    # A filesystem/OS that refuses symlinks must fall back to copying.
+    root, home = roots
+
+    def boom(self, target, target_is_directory=False):
+        raise OSError("symlinks unsupported")
+
+    monkeypatch.setattr("pathlib.Path.symlink_to", boom)
+    a = install("claude", "project", root, home)
+    assert a.outcome == "installed" and "copied" in a.detail
+    target = skill_dir(PLATFORMS["claude"], "project", root, home)
+    assert not (target / "SKILL.md").is_symlink()
+
+
+def test_install_blocked_when_path_occupied_by_incompatible_node(roots):
+    # A regular file where the references/ subdir must go makes mkdir raise OSError;
+    # install must degrade to a reported "blocked", not crash mid-loop.
+    root, home = roots
+    target = skill_dir(PLATFORMS["claude"], "project", root, home)
+    target.mkdir(parents=True)
+    (target / "references").write_text("not a directory")
+    a = install("claude", "project", root, home)
+    assert a.outcome == "blocked"
+    assert "write failed for references/example-session.md" in a.detail
+
+
+def test_copilot_installs_when_claude_only_partial(roots):
+    # Dedupe fires only when the claude install is fully up-to-date; a partial one
+    # must not suppress the copilot install.
+    root, home = roots
+    install("claude", "project", root, home)
+    claude_target = skill_dir(PLATFORMS["claude"], "project", root, home)
+    (claude_target / "SKILL.md").unlink()
+    (claude_target / "SKILL.md").write_text("modified")
+    a = install("copilot", "project", root, home)
+    assert a.outcome == "installed"
+    assert ".github/skills" in str(a.target)

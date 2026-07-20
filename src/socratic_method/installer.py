@@ -54,7 +54,6 @@ class Platform:
     label: str
     project_dir: str  # relative to --root
     user_dir: str | None  # relative to ~; None = no user scope documented
-    note: str = ""
 
 
 PLATFORMS: dict[str, Platform] = {
@@ -75,7 +74,6 @@ PLATFORMS: dict[str, Platform] = {
         label="GitHub Copilot",
         project_dir=".github/skills",
         user_dir=None,
-        note="reads a repo's .claude/skills too — a project Claude install covers it",
     ),
 }
 
@@ -183,8 +181,8 @@ class Action:
     platform: str
     scope: str
     target: Path
-    # 'installed' | 'up-to-date' | 'skipped' | 'would-install' | 'blocked' |
-    # 'removed' | 'not-installed'
+    # 'installed' | 'up-to-date' | 'skipped' | 'would-install' | 'would-remove' |
+    # 'blocked' | 'removed' | 'not-installed' | 'partial-or-modified'
     outcome: str
     detail: str = ""
 
@@ -241,20 +239,27 @@ def install(
     linked, copied = [], []
     for rel in MANAGED_FILES:
         dst = target / rel
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        # Remove any existing file OR stale/dangling symlink first — writing through
-        # a pre-existing link would modify the package's own asset, never the install.
-        dst.unlink(missing_ok=True)
-        src = None if copy else asset_path(rel)
-        if src is not None:
-            try:
-                dst.symlink_to(src)
-                linked.append(rel)
-                continue
-            except OSError:  # e.g. a filesystem/OS that forbids symlinks
-                pass
-        dst.write_bytes(packaged_content(rel))
-        copied.append(rel)
+        try:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            # Remove any existing file OR stale/dangling symlink first — writing through
+            # a pre-existing link would modify the package's own asset, never the install.
+            dst.unlink(missing_ok=True)
+            src = None if copy else asset_path(rel)
+            if src is not None:
+                try:
+                    dst.symlink_to(src)
+                    linked.append(rel)
+                    continue
+                except OSError:  # e.g. a filesystem/OS that forbids symlinks
+                    pass
+            dst.write_bytes(packaged_content(rel))
+            copied.append(rel)
+        except OSError as e:
+            # A path occupied by an incompatible node (a directory where a file must
+            # go, a file where references/ must go) must degrade to a reported failure,
+            # matching the module's "every failure returns an Action" contract, not a
+            # bare traceback mid-loop.
+            return Action(platform_key, scope, target, "blocked", f"write failed for {rel}: {e}")
 
     # Verify before claiming: read back every file (through the link) from disk.
     unverified = [rel for rel in MANAGED_FILES if file_state(target, rel) != "up-to-date"]
@@ -291,7 +296,7 @@ def uninstall(
     if install_state(target) == "not-installed" and not leftovers:
         return Action(platform_key, scope, target, "not-installed")
     if dry_run:
-        return Action(platform_key, scope, target, "would-install", "would remove managed files")
+        return Action(platform_key, scope, target, "would-remove", "would remove managed files")
     for rel in MANAGED_FILES:
         (target / rel).unlink(missing_ok=True)
     # Remove now-empty directories we own, innermost first.
