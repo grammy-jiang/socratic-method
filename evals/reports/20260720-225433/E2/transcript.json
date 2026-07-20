@@ -1,0 +1,107 @@
+[
+  {
+    "role": "examiner",
+    "turn": 1,
+    "text": "Mode: **develop**, depth: **standard** — got it, no setup turn needed.\n\nLet's start with the thesis. State the idea in one or two sentences, as if you were convincing a skeptical friend it's worth building."
+  },
+  {
+    "role": "user",
+    "turn": 1,
+    "text": "It's basically Splitwise but tuned for my actual household — an app for the four of us to log shared costs and it just tells us who owes who at the end of the month instead of everyone squinting at a spreadsheet."
+  },
+  {
+    "role": "examiner",
+    "turn": 2,
+    "text": "Here's what I'm hearing: **A lightweight shared-expense tracker for your four-person household — you log costs as they happen, and it automatically settles the books at month-end, replacing the manual spreadsheet-and-mental-math your household does now.**\n\nIs that a fair statement of it?"
+  },
+  {
+    "role": "user",
+    "turn": 2,
+    "text": "Not quite — it's not just logging costs as they happen, it's specifically about reconciling who-paid-what at the end of each month and settling debts in one payment, not a running tally we check whenever."
+  },
+  {
+    "role": "examiner",
+    "turn": 3,
+    "text": "Got it — updated: **A monthly household reconciliation tool for four roommates: everyone's shared costs from the month get tallied at a fixed point, netted down to who owes who, and settled in one payment — not a live running balance people check anytime.**\n\nIs that right now?"
+  },
+  {
+    "role": "user",
+    "turn": 3,
+    "text": "Yes, that's exactly it."
+  },
+  {
+    "role": "examiner",
+    "turn": 4,
+    "text": "What counts as a \"shared cost\" here — is it strictly things like rent/utilities/groceries that all four of you agree to split, or does it also cover one-off stuff like \"I bought paper towels, spot me\"?"
+  },
+  {
+    "role": "user",
+    "turn": 4,
+    "text": "Rent, utilities, and groceries, yeah — those are the standing categories we all agreed to split evenly. The one-off stuff like paper towels or someone spotting for a shared Amazon order gets logged too, just tagged separately so it still nets into the same month-end settlement."
+  },
+  {
+    "role": "examiner",
+    "turn": 5,
+    "text": "What's driving the \"settle once a month\" design specifically — is that based on how your household already handles money (like, rent's due monthly anyway), or is it more that a running tally created friction you've actually experienced?"
+  },
+  {
+    "role": "user",
+    "turn": 5,
+    "text": "Honestly, rent's due monthly anyway and utilities bill monthly, so it just made sense to fold groceries and one-off stuff into that same cycle instead of tracking two different rhythms."
+  },
+  {
+    "role": "examiner",
+    "turn": 6,
+    "text": "Walk me through an actual month with all four of you — say Alex, Jo, Sam, and Priya paid different amounts across rent, utilities, groceries, and a couple one-offs. What does \"settled in one payment\" actually look like when there are four people with different balances, not just two?"
+  },
+  {
+    "role": "user",
+    "turn": 6,
+    "text": "Okay, so month-end we'd tally each person's total paid versus their fair share — say I paid $600, Jo paid $200, Sam paid $150, Priya paid $50 on a total $1000 split four ways ($250 each — so I'm owed $350, Jo's owed... wait, Jo's short $50, Sam's short $100, Priya's short $200. The app just works out the minimum number of transfers so it nets out, like Priya pays me $200 and Sam pays me $150, done in two payments instead of everyone paying everyone."
+  },
+  {
+    "role": "examiner",
+    "turn": 7,
+    "text": "You mentioned rent splits evenly four ways — is that because all four rooms/rents are actually equal, or is \"even split\" a convention you've agreed to even if the underlying costs aren't equal?"
+  },
+  {
+    "role": "user",
+    "turn": 7,
+    "text": "Nah, they're not equal — mine's the biggest room so I actually pay a bit more, but early on we just agreed to keep the math simple and split even instead of doing per-square-foot or whatever. Everyone was fine eating the small difference for the sake of not overcomplicating it."
+  },
+  {
+    "role": "examiner",
+    "turn": 8,
+    "text": "So to be clear — does the app treat the full rent total as one number split evenly four ways (meaning the other three are effectively subsidizing your bigger room), or is your extra share handled outside the app and only the \"everyone-equal\" remainder goes through it?"
+  },
+  {
+    "role": "user",
+    "turn": 8,
+    "text": "It's all folded into the app as one rent number split evenly four ways — I just eat the difference for having the bigger room, we don't track that separately at all."
+  },
+  {
+    "role": "examiner",
+    "turn": 9,
+    "text": "What actually goes wrong with the spreadsheet today — is it that the math gets messy, that someone has to be the one nagging everyone to fill it in, that people forget to log things, or something else?"
+  },
+  {
+    "role": "user",
+    "turn": 9,
+    "text": "Honestly it's the nagging — someone always has to chase everyone to actually fill it in, and even when we do, half the time it's like two weeks after the fact so nobody remembers if it was split right."
+  },
+  {
+    "role": "examiner",
+    "turn": 10,
+    "text": "That's worth sitting with — the core problem you're describing is that people don't log expenses promptly without being chased, but what you're designing is a better calculator for once things ARE logged. How does the app itself change whether people actually log the $12 grocery run the day it happens, versus two weeks later?"
+  },
+  {
+    "role": "user",
+    "turn": 10,
+    "text": "Yeah okay, fair — logging is the actual problem, not the math. But that's kind of the point: right now nobody logs it right away because it feels like a chore with no payoff until month-end anyway, so if the app made it dead simple — like log a grocery run in ten seconds off your phone — maybe people wouldn't put it off two weeks."
+  },
+  {
+    "role": "examiner",
+    "turn": 11,
+    "text": "What's the simplest thing you *haven't* tried yet — like a shared Venmo group or a phone widget note — and what specifically would make that fail where a dedicated app succeeds?"
+  }
+]

@@ -1,0 +1,47 @@
+[
+  {
+    "role": "examiner",
+    "turn": 1,
+    "text": "State the idea in one or two sentences, as if convincing a skeptical friend: what's the core argument for trunk-based development that this blog post needs to make?"
+  },
+  {
+    "role": "user",
+    "turn": 1,
+    "text": "Look, the core pitch is simple: our feature branches are living two weeks or more before merge, and that gap is where bugs hide and blow up in prod — I've got two incidents to point to directly caused by that drift. Trunk-based dev forces small, frequent merges to main behind flags instead, so integration pain happens in tiny daily doses instead of one giant reckoning every sprint. That's the argument — less risk, faster feedback, no more surprise merge hell."
+  },
+  {
+    "role": "examiner",
+    "turn": 2,
+    "text": "Here's my restatement: \"Because our long-lived feature branches (2+ weeks) have directly caused at least two production incidents from integration drift, we should move to trunk-based development — small, frequent merges to main gated behind feature flags — so integration risk surfaces in small daily doses instead of accumulating into a high-stakes merge event.\"\n\nIs that a fair statement of the argument, or is something off?"
+  },
+  {
+    "role": "user",
+    "turn": 2,
+    "text": "That's fair, yeah — that's exactly it. I'd maybe add \"flag-gated\" isn't optional, it's the whole mechanism that makes small merges safe, so I want that connection explicit in the post, not just implied by \"behind feature flags.\" Otherwise you've nailed it."
+  },
+  {
+    "role": "examiner",
+    "turn": 3,
+    "text": "Good, I'll fold \"flag-gating is the mechanism, not an option\" into the thesis.\n\nA few things worth pinning down before you draft: first, when you say \"trunk-based,\" what does that actually mean operationally for your team — merges multiple times a day, still with code review, no more than a day or two of local WIP before it lands on main? Second, does your org already have solid feature-flag tooling and a culture of using it, or does the post also have to sell \"adopt flags\" as a prerequisite most people haven't done yet? And third, walk me through one of those two incidents concretely — was the two-week branch age actually the direct cause, or was it more that the branch hid a problem that a shorter branch plus flags wouldn't have caught either (e.g., a bad merge, insufficient tests)?"
+  },
+  {
+    "role": "user",
+    "turn": 3,
+    "text": "Operationally I mean multiple merges a day, still with review — just short review windows on small diffs, not the current model where a PR sits open for a week waiting on a reviewer. WIP should live on main behind a flag within a day or two, not accumulate locally. On flags: we've got LaunchDarkly already wired into the main services, so the tooling exists — the gap is culture, maybe a third of the org actually uses it regularly, so yeah, the post does need to sell \"use flags by default\" as much as it sells trunk-based itself. And for the incident — the sharper of the two — a branch sat for seventeen days while two other teams independently changed the same permissions middleware it touched; when it finally merged, the merge itself was clean, tests passed, but the combined behavior was wrong in a way no single PR's tests caught, and it took four hours to bisect in prod. Shorter branches wouldn't have just avoided a big scary merge, they'd have surfaced that permissions conflict on day two when it was one file's worth of context instead of three weeks of divergent changes — so yeah, the age was the direct cause, not incidental."
+  },
+  {
+    "role": "examiner",
+    "turn": 4,
+    "text": "One more round before I pull this into a brief: who's the person most likely to push back on this post, and what's their strongest objection — is it \"small diffs mean shallower review, we'll miss more bugs, not fewer\" or \"flags rot and now we're maintaining permanent debt\" or something else you've already heard? Related: only a third of the org uses LaunchDarkly regularly today — do you know *why* the other two-thirds don't (extra step, no clear convention, fear of flag sprawl), or is that itself still a guess? And practically, once merges land behind flags multiple times a day, who owns cleaning up stale flags before they pile up — is that part of what you're proposing, or an open gap in the pitch?"
+  },
+  {
+    "role": "user",
+    "turn": 4,
+    "text": "Fair question. On pushback, it's our QA lead — she's worried \"small diffs mean shallower review, we'll ship more bugs, not fewer,\" she hasn't said much about flag rot specifically. On the LaunchDarkly gap, honestly that's a half-guess — I know it's \"extra step, no clear convention\" from a couple hallway conversations, but I haven't actually gone and asked the two-thirds who don't use it, so I shouldn't state that as fact in the post without checking. And flag cleanup ownership is a real gap right now — nobody owns it, that's not part of my pitch yet, and I probably need to either propose something there or explicitly flag it as an open question rather than pretend it's solved."
+  },
+  {
+    "role": "examiner",
+    "turn": 5,
+    "text": "Self-check passed: all required frontmatter keys present and enum-valid, all four assumptions carry a status, `questions_asked: 6` matches the recount (3 in round one, 3 in round two), `open_questions` is non-empty and consistent with `verdict: sharpened` (these are validation items, not a core-thesis hole), and the body discloses what was and wasn't tested. Saved to `notes/idea-briefs/trunk-based-development-20260720.md`.\n\n**Verdict: sharpened.** The core causal claim held up under a concreteness pull — the seventeen-day permissions-middleware incident is a specific, direct case for branch age causing the failure, not incidental correlation. Two things changed from your opening pitch: flag-gating is now explicit as the mechanism (not an implied detail), and the post has to sell \"use flags by default\" as its own culture change, since two-thirds of the org isn't using the tooling you already have.\n\nThree open items to close before drafting, all in the brief:\n1. The QA lead's \"shallower review = more bugs\" objection was surfaced but never answered — get it in her words and address it head-on.\n2. Your read on why people don't use LaunchDarkly is admittedly a guess — check it before stating it as fact.\n3. Nobody owns flag cleanup today, and it's not in the pitch — decide whether that's part of the proposal or a named gap."
+  }
+]

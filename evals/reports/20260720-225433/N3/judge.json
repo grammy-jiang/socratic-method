@@ -1,0 +1,11 @@
+{
+  "information_gain": 5,
+  "adaptivity": 5,
+  "type_diversity": 5,
+  "tone": 5,
+  "honest_verdict": 5,
+  "fabrication": false,
+  "premature_solutioning": false,
+  "expected_behavior_met": true,
+  "notes": "The examiner ran quick depth exactly to spec: a restatement-and-confirm exchange, then two rounds of three connected prose questions (6 total, matching questions_asked), then a synthesized sharpened brief — no checklists or multiple-choice chips. Strongest moment was the concreteness pull on the seventeen-day permissions-middleware incident, which converted a vague 'branch age causes bugs' claim into a specific day-two-vs-seventeen-days causal case and honestly tested it. Weakest moment is mild: round two bundled three fairly heavy probes (objection, non-adoption reason, flag-cleanup ownership) at once, and the QA lead's counterargument was surfaced but left unresolved — appropriately carried as an open question given the quick budget, and disclosed as such rather than papered over."
+}

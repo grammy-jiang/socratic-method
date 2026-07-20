@@ -1,0 +1,17 @@
+[
+  {
+    "role": "examiner",
+    "turn": 1,
+    "text": "Mode: **develop**, depth: **standard** — got it, no setup turn needed.\n\nHere's my restatement of the idea: *Every new hire should be paired with a senior colleague as a dedicated mentor for their first three months on the job, to help them ramp up and integrate into the team.*\n\nIs that a fair restatement of what you have in mind?"
+  },
+  {
+    "role": "user",
+    "turn": 1,
+    "text": "Honestly, yeah, that's close to what I mean. But I'll flag two things up front: I haven't actually checked whether senior engineers have room for this, and I don't have a clear picture of what \"successfully onboarded\" would look like in a measurable way. Those are both open for me right now."
+  },
+  {
+    "role": "examiner",
+    "turn": 2,
+    "text": "Good, thesis confirmed. You've already put your finger on two soft spots — I'll come back to both, but one at a time.\n\nWalk me through what this pairing actually looks like, day to day — concretely, what does the senior person actually *do* with the new hire during that quarter?"
+  }
+]

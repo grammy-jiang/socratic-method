@@ -1,0 +1,166 @@
+[
+  {
+    "cell": "E1",
+    "name": "stress-midsession-stop",
+    "passed": false,
+    "harness_leak": false,
+    "judge_premature_solutioning": false,
+    "graders": {
+      "turn_discipline": true,
+      "no_premature_solutioning": true,
+      "brief_valid": true,
+      "stop_honored": false,
+      "session_claims_accurate": true
+    },
+    "judge_expected_behavior_met": true,
+    "judge_scores": {
+      "information_gain": 4,
+      "adaptivity": 4,
+      "type_diversity": 3,
+      "tone": 5,
+      "honest_verdict": 5
+    },
+    "turns": 3,
+    "brief": "billing-service-rust-rewrite-20260720.md"
+  },
+  {
+    "cell": "E2",
+    "name": "disputed-restatement-loop",
+    "passed": true,
+    "harness_leak": false,
+    "judge_premature_solutioning": false,
+    "graders": {
+      "turn_discipline": true,
+      "no_premature_solutioning": true,
+      "brief_valid": true,
+      "dispute_loop_honored": true,
+      "session_claims_accurate": true
+    },
+    "judge_expected_behavior_met": true,
+    "judge_scores": {
+      "information_gain": 5,
+      "adaptivity": 5,
+      "type_diversity": 4,
+      "tone": 5,
+      "honest_verdict": 4
+    },
+    "turns": 11,
+    "brief": "shared-expenses-app-20260720.md"
+  },
+  {
+    "cell": "N1",
+    "name": "stress-planted-contradiction",
+    "passed": false,
+    "harness_leak": false,
+    "judge_premature_solutioning": false,
+    "graders": {
+      "turn_discipline": true,
+      "no_premature_solutioning": true,
+      "brief_valid": true,
+      "refutation_mechanics": false,
+      "session_claims_accurate": true
+    },
+    "judge_expected_behavior_met": true,
+    "judge_scores": {
+      "information_gain": 5,
+      "adaptivity": 5,
+      "type_diversity": 4,
+      "tone": 5,
+      "honest_verdict": 4
+    },
+    "turns": 8,
+    "brief": "llm-auto-triage-bot-20260720.md"
+  },
+  {
+    "cell": "N2",
+    "name": "develop-genuine-unknowns",
+    "passed": false,
+    "harness_leak": false,
+    "judge_premature_solutioning": false,
+    "graders": {
+      "turn_discipline": true,
+      "no_premature_solutioning": true,
+      "brief_valid": true,
+      "aporia_open_questions": true,
+      "session_claims_accurate": true
+    },
+    "judge_expected_behavior_met": false,
+    "judge_scores": {
+      "information_gain": 4,
+      "adaptivity": 4,
+      "type_diversity": 3,
+      "tone": 5,
+      "honest_verdict": 3
+    },
+    "turns": 2,
+    "brief": "new-hire-mentoring-quarter-20260720.md"
+  },
+  {
+    "cell": "N3",
+    "name": "develop-quick-sanity-pass",
+    "passed": true,
+    "harness_leak": false,
+    "judge_premature_solutioning": false,
+    "graders": {
+      "quick_cadence": true,
+      "no_premature_solutioning": true,
+      "brief_valid": true,
+      "session_claims_accurate": true
+    },
+    "judge_expected_behavior_met": true,
+    "judge_scores": {
+      "information_gain": 5,
+      "adaptivity": 5,
+      "type_diversity": 5,
+      "tone": 5,
+      "honest_verdict": 5
+    },
+    "turns": 5,
+    "brief": "trunk-based-development-20260720.md"
+  },
+  {
+    "cell": "N4",
+    "name": "stress-concrete-falsifier",
+    "passed": false,
+    "harness_leak": false,
+    "judge_premature_solutioning": false,
+    "graders": {
+      "turn_discipline": true,
+      "no_premature_solutioning": true,
+      "brief_valid": true,
+      "falsification_probe_asked": false,
+      "session_claims_accurate": true
+    },
+    "judge_expected_behavior_met": true,
+    "judge_scores": {
+      "information_gain": 5,
+      "adaptivity": 5,
+      "type_diversity": 5,
+      "tone": 5,
+      "honest_verdict": 5
+    },
+    "turns": 13,
+    "brief": "pro-tier-saas-20260720.md"
+  },
+  {
+    "cell": "O1",
+    "name": "out-of-scope-precise-idea",
+    "passed": true,
+    "harness_leak": false,
+    "judge_premature_solutioning": false,
+    "graders": {
+      "scope_check_fired": true,
+      "no_premature_solutioning": true
+    },
+    "judge_expected_behavior_met": true,
+    "judge_scores": {
+      "information_gain": 4,
+      "adaptivity": 5,
+      "type_diversity": 3,
+      "tone": 5,
+      "honest_verdict": 4
+    },
+    "turns": 3,
+    "brief": "checkout-p99-latency-200ms-5k-rps-20260720.md"
+  }
+]
