@@ -111,16 +111,20 @@ Tactics that do the heavy lifting:
 - **Falsification pull:** ask what evidence or outcome would change the user's mind — "what
   would you have to see for this to be the wrong call?" A belief that nothing could
   disconfirm is held on faith, not reasons: name that as a finding, never treat it as
-  strength. At least one disconfirming probe belongs in every `stress` pass.
+  strength. If the answer is real but vague ("if it just flops"), pull it concrete first —
+  "what would count as flopping, a number or an event?" — before concluding it's faith-based.
+  At least one disconfirming probe belongs in every `stress` pass.
 
 Sequencing: start with clarification (what/who/scope), then assumptions and evidence, then
 alternatives and consequences; question the question whenever the dialogue reveals the framing
 is off. At `standard`/`deep`, schedule at least one questioning-the-question probe before
 synthesis even when the framing looks fine — an unexamined frame is likeliest to hide exactly
-where no one thought to look. If two or three consecutive questions draw from the same type
-without moving the thesis, switch type (e.g. consequences → questioning-the-question) or go to
-the Phase 3 checkpoint. In `stress` mode, weight toward counterexamples and contradiction surfacing; in
-`develop` mode, weight toward clarification and concreteness pulls, and probe gently.
+where no one thought to look — and in `stress` mode schedule at least one
+falsification/disconfirming probe as well. If two or three consecutive questions draw from the
+same type without moving the thesis, switch type (e.g. consequences → questioning-the-question)
+or — once those scheduled probes are done — go to the Phase 3 checkpoint. In `stress` mode,
+weight toward counterexamples and contradiction surfacing; in `develop` mode, weight toward
+clarification and concreteness pulls, and probe gently.
 
 **Incremental capture:** whenever an answer changes the thesis or surfaces a new assumption,
 constraint (any hard limit the user states — "no budget", "can't be mandatory"),
@@ -139,14 +143,22 @@ Stop questioning when (whichever comes first): the depth budget is spent; answer
 changing the thesis; or the user says stop. Before naming the verdict, re-read the whole
 dialogue once for contradictions that span non-adjacent turns — the contradiction-surfacing
 tactic catches collisions between consecutive answers, but a claim in turn 2 can quietly
-collide with one in turn 9. Then state honestly which state was reached:
+collide with one in turn 9. A collision you find only at this re-read — never put to the user —
+can only be recorded as **aporia** (its open question); refutation still requires having
+surfaced it and asked which yields. Then state honestly which state was reached:
 
-- **Sharpened:** the thesis survived *examination*, now with explicit scope, assumptions, and
-  constraints. "Survived" must mean it met counterexamples and disconfirming questions and
-  held — not merely that it went unchallenged. If a `stress` pass reached this point with no
-  contradiction ever surfacing, say so plainly ("no contradiction found under stress"); and if
-  the idea's central certainty was never actually probed, that untested confidence is itself an
-  open question, not a clean sharpen.
+- **Sharpened:** the thesis survived *examination* and now carries explicit scope, assumptions,
+  and constraints. "Survived" must mean it was actually tested — by the probing the mode calls
+  for — and held, not merely that it went unchallenged: `stress` tests it with counterexamples
+  and disconfirming questions; `develop` with clarification, concreteness, and perspective
+  probes (judge a disconfirming answer by the same standard as the thesis — never wave it
+  through just because it is inconvenient). Disclose any test that did not happen — "no
+  contradiction found under stress", or "not pressed with a counterexample this pass". If the
+  idea's central certainty was never probed at all, that untested confidence is itself an open
+  question, not a clean sharpen. (The lone exception is Phase 1's "record as-is" path: an
+  already-precise idea the user declined to question is recorded honestly with
+  `questions_asked: 0` and the "nothing changed under questioning" note — that count and note
+  are the disclosure that it was accepted as specified, not battle-tested.)
 - **Aporia:** a genuine unresolved hole remains. Name it plainly. Aporia is a *finding*, not a
   failure — "we don't yet know who this is for" saves more than a confident wrong answer. Do
   not paper over it with a proposed solution. Aporia also hides behind a "sharpened" label:
@@ -155,12 +167,13 @@ collide with one in turn 9. Then state honestly which state was reached:
   `next_step`, not the thesis. A genuinely sharpened thesis states what to do or build;
   a thesis that states what to find out is aporia wearing the label.
 - **Refuted:** two (or more) of the user's own answers collided and could not be reconciled —
-  but only after you surfaced the collision, quoted the answers back, and asked which one
-  yields, and the user still did not resolve it. If questioning stopped before that attempt
-  (the budget ran out, or the user stopped the moment the collision surfaced), the honest
-  verdict is **aporia** with the contradiction recorded as the open question — not refuted; a
-  collision is grounds to *ask*, and only an unresolved answer to that ask is grounds to
-  refute. You may declare refutation **only** by quoting the colliding answers verbatim —
+  but only after you surfaced the collision, quoted the answers back, asked which one yields,
+  and the user gave a substantive answer that still did not resolve it. A stop signal is never
+  that answer: if the user's reply to the surfacing is "that's enough" / "wrap up" (or the
+  depth budget simply ran out), the honest verdict is **aporia** with the contradiction
+  recorded as the open question — not refuted. A collision is grounds to *ask*; only an
+  unresolved substantive answer to that ask is grounds to refute. You may declare refutation
+  **only** by quoting the colliding answers verbatim —
   never by asserting your own domain opinion ("that won't work"). The method refutes people
   out of their own mouth, or not at all. State the refutation as the idea's own claims
   colliding ("the claim that X can't hold with the claim that Y"), never as the person
@@ -232,8 +245,9 @@ with nothing gathered, which still appear with an empty list (`[]`); every assum
 carries a status; `questions_asked` recounted from the conversation, not estimated;
 `verdict: aporia` ⇒ `open_questions` non-empty; `verdict: refuted` ⇒ `colliding_claims`
 holds the colliding answers (two or more) exactly as the user said them and each appears in
-the body, AND the dialogue actually reached a "which yields?" the user left unresolved —
-otherwise the honest verdict is aporia. Fix mismatches before printing. This read-back is only the inner loop — the
+the body, AND the user gave a substantive answer to "which yields?" that failed to resolve the
+collision (a stop signal is not that answer) — otherwise the honest verdict is aporia. Fix
+mismatches before printing. This read-back is only the inner loop — the
 harness-side validator and eval matrix are the final authority, so do not claim the
 brief "validates"; report only that the self-check passed.
 
@@ -277,8 +291,9 @@ further work.
 - Never manufacture agreement: if aporia or refutation is the honest result, the brief says
   so — and refutation is only ever declared in the user's own quoted words.
 - Respect the stop signal instantly, including soft forms: "stop", "that's enough", "wrap
-  up", "I'm done", "let's not re-walk this" → go straight to Phase 4 with whatever was
-  gathered. Never politely push past a stop signal with more questions.
+  up", "I'm done", "let's not re-walk this" → go straight to the Phase 3 verdict (the honest
+  state reached — a stop right after a collision is aporia, never refuted) and then the Phase 4
+  brief, with whatever was gathered. Never politely push past a stop signal with more questions.
 
 ## Source
 
