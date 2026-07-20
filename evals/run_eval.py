@@ -46,6 +46,41 @@ EXAMINER_TIMEOUT = 900
 SIM_TIMEOUT = 300
 JUDGE_TIMEOUT = 600
 
+# Words shared by nearly every invocation (the command, mode/depth vocabulary, and generic
+# idea-framing verbs) — excluded from leak correlation so only distinctive tokens can tie a
+# stray brief in the user's notes/ to a specific cell. See _find_leaked_brief.
+_LEAK_STOPWORDS = frozenset(
+    {
+        "socratic",
+        "method",
+        "mode",
+        "stress",
+        "develop",
+        "quick",
+        "standard",
+        "deep",
+        "depth",
+        "this",
+        "that",
+        "with",
+        "from",
+        "your",
+        "what",
+        "want",
+        "have",
+        "into",
+        "about",
+        "idea",
+        "plan",
+        "start",
+        "would",
+        "should",
+        "them",
+        "then",
+        "than",
+    }
+)
+
 SIM_PROMPT_TMPL = """{persona}
 
 Conversation so far (you are the "user"; the "examiner" is questioning you):
@@ -170,23 +205,49 @@ def _find_leaked_brief(run_started: float, scenario: dict) -> Path | None:
     leak_dir = REPO_ROOT / "notes" / "idea-briefs"
     if not leak_dir.is_dir():
         return None
-    fresh = [p for p in leak_dir.glob("*.md") if p.stat().st_mtime >= run_started]
+
+    def _fresh(p: Path) -> bool:
+        try:
+            return p.stat().st_mtime >= run_started
+        except OSError:  # file vanished between glob and stat — treat as not-fresh
+            return False
+
+    fresh = [p for p in leak_dir.glob("*.md") if _fresh(p)]
     if not fresh:
         return None
-    tokens = {t.lower() for t in re.findall(r"[A-Za-z]{4,}", scenario.get("invocation", ""))}
+    # Correlate on the DISTINCTIVE tokens of the invocation only: drop the flags (the
+    # `--mode`/`--depth` tail) and a stopword set of words every invocation shares, so a
+    # coincidental real brief the user was writing (one that merely reuses "weekly" is
+    # fine, but not one that only shares "idea"/"plan") is not attributed to this cell.
+    idea_part = scenario.get("invocation", "").split(" --", 1)[0]
+    tokens = {
+        t.lower()
+        for t in re.findall(r"[A-Za-z]{4,}", idea_part)
+        if t.lower() not in _LEAK_STOPWORDS
+    }
 
     def related(p: Path) -> bool:
         try:
-            return (
-                any(t in p.read_text(encoding="utf-8").lower() for t in tokens) if tokens else True
-            )
-        except OSError:
+            text = p.read_text(encoding="utf-8").lower()
+        except (OSError, UnicodeDecodeError):
+            # Unreadable or non-UTF-8 file in notes/: can't correlate, so don't claim it
+            # (and don't let a stray binary crash the whole sweep).
             return False
+        return any(t in text for t in tokens) if tokens else True
 
     related_files = [p for p in fresh if related(p)]
     if not related_files:
         return None  # fresh files exist but none match this cell — don't mis-attribute
     return sorted(related_files, key=lambda p: p.stat().st_mtime)[-1]
+
+
+def _capture_leaked_brief(leaked: Path, dest: Path) -> Path:
+    """COPY (never move) a leaked brief into the report as evidence, and return the copy.
+
+    The leaked file lives in the user's gitignored notes/ and the token correlation can be
+    coincidental — moving it would delete a real brief the user was in the middle of
+    writing. Leave the original untouched; the report keeps a copy."""
+    return Path(shutil.copy2(str(leaked), dest))
 
 
 def run_cell(scenario: dict, args, report_dir: Path) -> dict:
@@ -251,7 +312,13 @@ def run_cell(scenario: dict, args, report_dir: Path) -> dict:
         if leaked is not None:
             harness_leak = True
             print(f"  [{cell}] HARNESS LEAK: brief written outside sandbox: {leaked}")
-            brief_path = Path(shutil.move(str(leaked), cell_dir / "brief-leaked.md"))
+            try:
+                brief_path = _capture_leaked_brief(leaked, cell_dir / "brief-leaked.md")
+            except OSError as e:
+                # The source can vanish between detection and copy; a bare OSError here would
+                # escape main()'s per-cell handler and abort the whole remaining matrix.
+                print(f"  [{cell}] leak capture failed ({e}); continuing")
+                brief_path = None
     grader_results = run_graders(transcript, brief_path, scenario)
 
     judge_prompt = JUDGE_PROMPT_TMPL.format(

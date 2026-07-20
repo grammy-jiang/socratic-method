@@ -6,4 +6,7 @@ dist/
 .pytest_cache/
 uv.lock
 evals/reports/*/*/workdir/
+# A captured leaked brief is copied verbatim from the gitignored notes/ tree; keep it out
+# of the otherwise-committable report dir so a private brief can't be committed by accident.
+evals/reports/**/brief-leaked.md
 notes/

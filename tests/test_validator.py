@@ -6,7 +6,11 @@ import re
 import pytest
 from conftest import GOLDEN
 
-from socratic_method.validator import split_frontmatter, validate_idea_brief
+from socratic_method.validator import (
+    _MAX_BRIEF_BYTES,
+    split_frontmatter,
+    validate_idea_brief,
+)
 
 MUTATIONS = {
     "refuted-without-colliding-claims": (
@@ -80,6 +84,25 @@ def test_colliding_claims_non_list_is_reported_not_raised(tmp_path):
     assert any("colliding_claims" in e and "array" in e for e in errors)
 
 
+def test_refuted_allows_three_colliding_claims(tmp_path):
+    # colliding_claims was relaxed from exactly-2 to 2-or-more: a genuine 3-way collision
+    # must validate as long as each quote appears verbatim in the body. Guards against a
+    # re-introduced maxItems:2 cap (which would reject this brief as "too long").
+    claims = (
+        '["Weekly, otherwise it loses momentum", '
+        '"most engineers here hate presenting", '
+        '"monthly with strong talks beats weekly with filler"]'
+    )
+    p = tmp_path / GOLDEN.name
+    p.write_text(
+        GOLDEN.read_text(encoding="utf-8").replace(
+            "verdict: sharpened", f"verdict: refuted\ncolliding_claims: {claims}"
+        ),
+        encoding="utf-8",
+    )
+    assert validate_idea_brief(p) == []
+
+
 def test_body_divider_line_is_preserved():
     # Regression: split_frontmatter used to eat body lines beginning with "---".
     fm, body = split_frontmatter("---\na: 1\n---\nbefore\n---\nafter\n")
@@ -126,6 +149,39 @@ def test_unterminated_frontmatter_reported(tmp_path):
     assert validate_idea_brief(p) == [
         "Unterminated YAML frontmatter block (opening --- found, no closing --- found)"
     ]
+
+
+def test_oversize_file_returns_read_error(tmp_path):
+    # A pathological over-cap brief must be rejected by the size guard, never read whole
+    # into memory (defends the CLI and the eval harness against a giant blob).
+    p = tmp_path / "huge-20260704.md"
+    p.write_bytes(b"-" * (_MAX_BRIEF_BYTES + 1))
+    assert validate_idea_brief(p) == [f"Read error: file exceeds {_MAX_BRIEF_BYTES}-byte limit"]
+
+
+def test_deeply_nested_yaml_reported_not_raised(tmp_path):
+    # Deeply nested flow YAML overflows the pure-Python parser's recursion; it must degrade
+    # to an error string, never let a RecursionError escape the validator.
+    depth = 20000
+    p = tmp_path / "nested-20260704.md"
+    p.write_text("---\na: " + "[" * depth + "]" * depth + "\n---\n# body\n", encoding="utf-8")
+    errors = validate_idea_brief(p)  # must return, never raise
+    assert any("nested too deeply" in e for e in errors), errors
+
+
+def test_yaml_aliases_are_rejected(tmp_path):
+    # Aliases have no legitimate use in a brief and are a DoS vector: a nested-anchor graph
+    # stays cheap at parse time (PyYAML shares references) but detonates downstream in
+    # jsonschema's repr-based error messages, under the byte cap. Refuse them at the loader —
+    # returns an error string, never expands. (Key on the exact rejection message, not a bare
+    # "alias" substring, which a filename slug or schema message could satisfy on its own;
+    # fails safe, so it can't hang the suite if the guard regresses.)
+    p = tmp_path / "brief-20260704.md"
+    p.write_text(
+        "---\nschema: idea-brief-v1\nidea: &x foo\ndate: *x\n---\n# body\n", encoding="utf-8"
+    )
+    errors = validate_idea_brief(p)
+    assert any("aliases/anchors are not allowed" in e for e in errors), errors
 
 
 def test_title_header_prefix_is_intentional(tmp_path):

@@ -93,8 +93,8 @@ the six classic Socratic question types:
 |------|--------|---------------|
 | Clarification | vague terms, scope | "When you say 'better', better for whom, measured how?" |
 | Assumptions | what's taken for granted | "This assumes you'll still want this in a year. What tells you that?" |
-| Evidence & reasons | why the user believes it | "What have you actually seen or tried that supports this?" |
-| Viewpoints & alternatives | competing framings | "How would someone happy with the status quo describe your idea?" |
+| Evidence & reasons | why the user believes it, and what would count against it | "What have you actually seen that supports this — and what would you expect to see if it were false?" |
+| Viewpoints & alternatives | competing framings, opportunity cost | "How would someone happy with the status quo describe your idea? What's the next-best use of the same time or money?" |
 | Implications & consequences | where it leads | "If this works exactly as hoped, what does it displace or break?" |
 | Questioning the question | the framing itself | "Is 'which option' the real question, or is it 'whether at all'?" |
 
@@ -108,15 +108,26 @@ Tactics that do the heavy lifting:
   "define it once" question.
 - **Concreteness pull:** abstract answer → ask for one specific instance ("walk me through
   the very first time this gets used, step by step").
+- **Falsification pull:** ask what evidence or outcome would change the user's mind — "what
+  would you have to see for this to be the wrong call?" A belief that nothing could
+  disconfirm is held on faith, not reasons: name that as a finding, never treat it as
+  strength. If the answer is real but vague ("if it just flops"), pull it concrete first —
+  "what would count as flopping, a number or an event?" — before concluding it's faith-based.
+  At least one disconfirming probe belongs in every `stress` pass.
 
 Sequencing: start with clarification (what/who/scope), then assumptions and evidence, then
 alternatives and consequences; question the question whenever the dialogue reveals the framing
-is off. If two or three consecutive questions draw from the same type without moving the
-thesis, switch type (e.g. consequences → questioning-the-question) or go to the Phase 3
-checkpoint. In `stress` mode, weight toward counterexamples and contradiction surfacing; in
-`develop` mode, weight toward clarification and concreteness pulls, and probe gently.
+is off. At `standard`/`deep`, schedule at least one questioning-the-question probe before
+synthesis even when the framing looks fine — an unexamined frame is likeliest to hide exactly
+where no one thought to look — and in `stress` mode schedule at least one
+falsification/disconfirming probe as well. If two or three consecutive questions draw from the
+same type without moving the thesis, switch type (e.g. consequences → questioning-the-question)
+or — once those scheduled probes are done — go to the Phase 3 checkpoint. In `stress` mode,
+weight toward counterexamples and contradiction surfacing; in `develop` mode, weight toward
+clarification, concreteness, and perspective pulls, and probe gently.
 
 **Incremental capture:** whenever an answer changes the thesis or surfaces a new assumption,
+constraint (any hard limit the user states — "no budget", "can't be mandatory"),
 contradiction, or open question, silently update the draft brief at the output path (Phase 4
 format). Keep every interim save schema-valid without inventing content: use `verdict:
 sharpened` with `open_questions: []` until a genuine gap has actually surfaced, and switch to
@@ -129,9 +140,28 @@ interrupted or abandoned session must still leave a usable partial brief.
 ### Phase 3 — Verdict checkpoint
 
 Stop questioning when (whichever comes first): the depth budget is spent; answers stop
-changing the thesis; or the user says stop. Then state honestly which state was reached:
+changing the thesis; or the user says stop. Before naming the verdict, re-read the whole
+dialogue once for contradictions that span non-adjacent turns — the contradiction-surfacing
+tactic catches collisions between consecutive answers, but a claim in turn 2 can quietly
+collide with one in turn 9. A collision you find only at this re-read — never put to the user —
+can only be recorded as **aporia** (its open question); refutation still requires having
+surfaced it and asked which yields. Then state honestly which state was reached:
 
-- **Sharpened:** the thesis survived, now with explicit scope, assumptions, and constraints.
+- **Sharpened:** the thesis survived *examination* and now carries explicit scope, assumptions,
+  and constraints. "Survived" must mean it was actually tested — by the probing the mode calls
+  for — and held, not merely that it went unchallenged: `stress` tests it with counterexamples
+  and disconfirming questions; `develop` with clarification, concreteness, and perspective
+  probes (judge a disconfirming answer by the same standard as the thesis — never wave it
+  through just because it is inconvenient). Disclose any test that did not happen — "no
+  contradiction found under stress", "not pressed with a counterexample this pass", or (in
+  `develop`) "not tested from another viewpoint this pass". Missing a mode-preferred tactic
+  while the core claim was otherwise engaged is a disclosable gap; but if the idea's central
+  certainty was never probed at all — the risk a `quick` pass runs when it only clarifies
+  scope — that untested confidence is itself an open question, not a clean sharpen. (The lone
+  exception is Phase 1's "record as-is" path: an
+  already-precise idea the user declined to question is recorded honestly with
+  `questions_asked: 0` and the "nothing changed under questioning" note — that count and note
+  are the disclosure that it was accepted as specified, not battle-tested.)
 - **Aporia:** a genuine unresolved hole remains. Name it plainly. Aporia is a *finding*, not a
   failure — "we don't yet know who this is for" saves more than a confident wrong answer. Do
   not paper over it with a proposed solution. Aporia also hides behind a "sharpened" label:
@@ -139,11 +169,18 @@ changing the thesis; or the user says stop. Then state honestly which state was 
   go ask / define the metric"), the verdict is aporia — the gathering plan belongs in
   `next_step`, not the thesis. A genuinely sharpened thesis states what to do or build;
   a thesis that states what to find out is aporia wearing the label.
-- **Refuted:** two of the user's own answers collided and could not be reconciled. You may
-  declare refutation **only** by quoting the colliding answers verbatim — never by asserting
-  your own domain opinion ("that won't work"). The method refutes people out of their own
-  mouth, or not at all. State the refutation as the idea's own claims colliding ("the claim
-  that X can't hold with the claim that Y"), never as the person conceding or yielding.
+- **Refuted:** two (or more) of the user's own answers collided and could not be reconciled —
+  but only after you surfaced the collision, quoted the answers back, asked which one yields,
+  and the user gave a substantive answer that still did not resolve it. A stop signal is never
+  that answer: if the user's reply to the surfacing is "that's enough" / "wrap up" (or the
+  depth budget simply ran out), the honest verdict is **aporia** with the contradiction
+  recorded as the open question — not refuted. A collision is grounds to *ask*; only an
+  unresolved substantive answer to that ask is grounds to refute. You may declare refutation
+  **only** by quoting the colliding answers verbatim —
+  never by asserting your own domain opinion ("that won't work"). The method refutes people
+  out of their own mouth, or not at all. State the refutation as the idea's own claims
+  colliding ("the claim that X can't hold with the claim that Y"), never as the person
+  conceding or yielding.
 
 ### Phase 4 — Maieutic synthesis (the deliverable)
 
@@ -169,11 +206,12 @@ questions_asked: 9      # Phase 2 probing questions only (not the thesis ask, st
 #                       # recount from the conversation when writing — never estimate
 types_used: [clarification, assumptions, evidence]   # exact tokens: clarification |
 #   assumptions | evidence | viewpoints | implications | questioning-the-question
-# colliding_claims: ["quote 1", "quote 2"]   # REQUIRED when verdict: refuted — the two
-#                                            # colliding answers, verbatim as the user said them
+# colliding_claims: ["quote 1", "quote 2"]   # REQUIRED when verdict: refuted — the
+#                                            # colliding answers (two or more; usually two),
+#                                            # verbatim as the user said them
 assumptions:
   - text: "..."
-    status: unvalidated # validated | unvalidated | risky
+    status: unvalidated # validated (evidence seen) | unvalidated (needs checking) | risky (load-bearing AND doubtful)
 open_questions:
   - "..."
 constraints:
@@ -191,11 +229,14 @@ next_step: "One concrete action"
 ```
 
 Write it to `notes/idea-briefs/<slug>.md` (create the directory if needed; honor a
-user-supplied path instead). Derive the slug from the idea plus the date
-(`<idea-slug>-YYYYMMDD`, lowercase letters/digits/hyphens only — never path characters from
-free-text input); if the file already exists, read it first and overwrite only if it
-is an earlier draft of this same dialogue — otherwise pick a suffixed name. Never write into
-areas owned by generators or other tooling (for example build outputs or generated-artifact
+user-supplied path instead). The destination is an allowlist of one — `notes/idea-briefs/`
+under the working directory, or a path the user names explicitly; nothing derived from the
+idea *text* ever selects the directory. Derive the slug from the idea plus the date
+(`<idea-slug>-YYYYMMDD`, lowercase letters/digits/hyphens only), sanitizing away every path
+character — separators, `..`, a leading `/` or `~` — so a crafted idea title cannot redirect
+the write outside that folder. If the file already exists, read it first and overwrite only
+if it is an earlier draft of this same dialogue — otherwise pick a suffixed name. Never write
+into areas owned by generators or other tooling (build outputs or generated-artifact
 directories such as `dist/`, `.next/`, or a coding agent's own generated-adapter folder).
 Print the brief in chat as well.
 
@@ -206,8 +247,13 @@ save). Verify: every required frontmatter key present and enum-valid — includi
 with nothing gathered, which still appear with an empty list (`[]`); every assumption
 carries a status; `questions_asked` recounted from the conversation, not estimated;
 `verdict: aporia` ⇒ `open_questions` non-empty; `verdict: refuted` ⇒ `colliding_claims`
-holds the two colliding answers exactly as the user said them, and both appear in the
-body. Fix mismatches before printing. This read-back is only the inner loop — the
+holds the colliding answers (two or more) exactly as the user said them and each appears in
+the body, AND the user gave a substantive answer to "which yields?" that failed to resolve the
+collision (a stop signal is not that answer) — otherwise the honest verdict is aporia;
+`verdict: sharpened` ⇒ the body says how the thesis was actually tested and discloses any
+mode-preferred test that did not happen (or, on the "record as-is" path, `questions_asked: 0`
+with the "nothing changed" note) — a bare "survived" with the core claim never probed is aporia,
+not a clean sharpen. Fix mismatches before printing. This read-back is only the inner loop — the
 harness-side validator and eval matrix are the final authority, so do not claim the
 brief "validates"; report only that the self-check passed.
 
@@ -220,12 +266,15 @@ writing your first brief of a session.
 
 This skill is a *front-end*: the brief is the input that makes downstream work better. The
 frontmatter is designed for mechanical hand-off — `open_questions` is a ready-made research
-agenda, `assumptions[status=unvalidated]` is a validation worklist.
+agenda, and `assumptions` whose `status` is `risky` or `unvalidated` are a validation
+worklist: work the `risky` ones first (load-bearing *and* doubtful), then `unvalidated`
+(needs checking but not obviously fragile); `validated` ones (evidence already seen) need no
+further work.
 
 - **Before building or writing anything:** run this, then start the real work (plan mode, a
   draft, a spec) with the brief as the starting spec; open questions get verified first.
-- **Before research** (e.g. `deep-research`): pass `open_questions` and unvalidated
-  assumptions as the research questions.
+- **Before research** (e.g. `deep-research`): pass `open_questions` plus the `risky` and
+  `unvalidated` assumptions as the research questions.
 - **Before authoring an agent, skill, or subagent:** question the idea — domain, sources,
   who consults it, what "good advice" means — before building anything; the brief informs
   scope and source selection.
@@ -248,8 +297,9 @@ agenda, `assumptions[status=unvalidated]` is a validation worklist.
 - Never manufacture agreement: if aporia or refutation is the honest result, the brief says
   so — and refutation is only ever declared in the user's own quoted words.
 - Respect the stop signal instantly, including soft forms: "stop", "that's enough", "wrap
-  up", "I'm done", "let's not re-walk this" → go straight to Phase 4 with whatever was
-  gathered. Never politely push past a stop signal with more questions.
+  up", "I'm done", "let's not re-walk this" → go straight to the Phase 3 verdict (the honest
+  state reached — a stop right after a collision is aporia, never refuted) and then the Phase 4
+  brief, with whatever was gathered. Never politely push past a stop signal with more questions.
 
 ## Source
 

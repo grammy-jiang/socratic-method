@@ -5,23 +5,44 @@ on:
     branches: [master, main]
   pull_request:
 
+# Least privilege: a read-only GITHUB_TOKEN for the whole workflow. No job here writes to
+# the repo (artifact upload uses the run-scoped artifact token, not these permissions).
+permissions:
+  contents: read
+
+# One in-flight run per ref: a new push to a PR obsoletes the previous run, so cancel it;
+# never cancel runs on the default branches (each pushed commit there gets its own run).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/main' }}
+
+# Third-party actions are pinned to a full commit SHA (a tag is mutable — pinning defeats a
+# tag-move supply-chain attack); the trailing comment tracks the human-readable version and
+# is what Dependabot (see .github/dependabot.yml) bumps.
 jobs:
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
       - name: pre-commit (all files)
         run: uvx pre-commit run --all-files --show-diff-on-failure
 
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
+      fail-fast: false  # one Python version failing must not mask the others
       matrix:
         python-version: ["3.11", "3.12", "3.13", "3.14"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
         with:
           python-version: ${{ matrix.python-version }}
       - name: Sync (with dev group)
@@ -37,9 +58,12 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
       - name: Build sdist + wheel
         run: uv build
       - name: Check metadata
@@ -50,7 +74,7 @@ jobs:
           VIRTUAL_ENV=/tmp/wheel-venv uv pip install dist/*.whl
           /tmp/wheel-venv/bin/socratic-method --version
           /tmp/wheel-venv/bin/socratic-method setup all --dry-run --root "$RUNNER_TEMP"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: dist
           path: dist/
