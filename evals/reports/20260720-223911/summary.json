@@ -1,0 +1,26 @@
+[
+  {
+    "cell": "N4",
+    "name": "stress-concrete-falsifier",
+    "passed": true,
+    "harness_leak": false,
+    "judge_premature_solutioning": false,
+    "graders": {
+      "turn_discipline": true,
+      "no_premature_solutioning": true,
+      "brief_valid": true,
+      "falsification_probe_asked": true,
+      "session_claims_accurate": true
+    },
+    "judge_expected_behavior_met": true,
+    "judge_scores": {
+      "information_gain": 5,
+      "adaptivity": 5,
+      "type_diversity": 5,
+      "tone": 5,
+      "honest_verdict": 5
+    },
+    "turns": 12,
+    "brief": "saas-pro-tier-20260720.md"
+  }
+]
