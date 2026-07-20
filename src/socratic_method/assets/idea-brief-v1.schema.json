@@ -76,9 +76,8 @@
     "colliding_claims": {
       "type": "array",
       "minItems": 2,
-      "maxItems": 2,
       "items": { "type": "string", "minLength": 1 },
-      "description": "verdict=refuted only: the two user answers that collided, quoted verbatim."
+      "description": "verdict=refuted only: the two-or-more user answers that collided, quoted verbatim."
     }
   },
   "additionalProperties": false,

@@ -84,6 +84,25 @@ def test_colliding_claims_non_list_is_reported_not_raised(tmp_path):
     assert any("colliding_claims" in e and "array" in e for e in errors)
 
 
+def test_refuted_allows_three_colliding_claims(tmp_path):
+    # colliding_claims was relaxed from exactly-2 to 2-or-more: a genuine 3-way collision
+    # must validate as long as each quote appears verbatim in the body. Guards against a
+    # re-introduced maxItems:2 cap (which would reject this brief as "too long").
+    claims = (
+        '["Weekly, otherwise it loses momentum", '
+        '"most engineers here hate presenting", '
+        '"monthly with strong talks beats weekly with filler"]'
+    )
+    p = tmp_path / GOLDEN.name
+    p.write_text(
+        GOLDEN.read_text(encoding="utf-8").replace(
+            "verdict: sharpened", f"verdict: refuted\ncolliding_claims: {claims}"
+        ),
+        encoding="utf-8",
+    )
+    assert validate_idea_brief(p) == []
+
+
 def test_body_divider_line_is_preserved():
     # Regression: split_frontmatter used to eat body lines beginning with "---".
     fm, body = split_frontmatter("---\na: 1\n---\nbefore\n---\nafter\n")
