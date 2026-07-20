@@ -121,8 +121,10 @@ contradiction, or open question, silently update the draft brief at the output p
 format). Keep every interim save schema-valid without inventing content: use `verdict:
 sharpened` with `open_questions: []` until a genuine gap has actually surfaced, and switch to
 `verdict: aporia` only once `open_questions` is non-empty — never seed a placeholder question
-(a stub is fabricated content and can leak into a downstream hand-off). An interrupted or
-abandoned session must still leave a usable partial brief.
+(a stub is fabricated content and can leak into a downstream hand-off). For the required
+non-empty `next_step`, write a neutral status line that recommends nothing about the idea
+(e.g. `"session in progress — no next step yet"`) until Phase 4 supplies the real one. An
+interrupted or abandoned session must still leave a usable partial brief.
 
 ### Phase 3 — Verdict checkpoint
 
