@@ -18,13 +18,28 @@ from pathlib import Path
 
 import yaml
 
-from socratic_method.validator import split_frontmatter, validate_idea_brief
+from socratic_method.validator import (
+    REQUIRED_HEADERS,
+    parse_frontmatter_yaml,
+    split_frontmatter,
+    validate_idea_brief,
+)
 
 _BRIEF_MARKER = "schema: idea-brief-v1"
 
 # A synthesis (Phase 3/4) message: the examiner may print the brief in chat as prose
 # rather than embedding the frontmatter, so detect any of the wrap-up signatures.
-_SYNTHESIS_RE = re.compile(r"schema: idea-brief-v1|notes/idea-briefs/|\*\*Verdict|\bVerdict:")
+# Built from _BRIEF_MARKER so the marker string has a single source.
+_SYNTHESIS_RE = re.compile(rf"{re.escape(_BRIEF_MARKER)}|notes/idea-briefs/|\*\*Verdict|\bVerdict:")
+
+# Brief-ECHO markers only (the printed brief's own content is starting) — a stricter set
+# than _SYNTHESIS_RE, which also matches the bare "Verdict:" prose label that in live
+# dialogue routinely PRECEDES the quote-back a same-message refutation is built from.
+_BRIEF_ECHO_RE = re.compile(
+    "|".join(
+        [re.escape(_BRIEF_MARKER), "notes/idea-briefs/", *(re.escape(h) for h in REQUIRED_HEADERS)]
+    )
+)
 
 _SOLUTIONING_MARKERS = (
     "i'd suggest",
@@ -90,14 +105,13 @@ def _pre_synthesis_examiner_msgs(transcript: list[dict]) -> list[dict]:
 def _load_frontmatter(brief_path: Path | None) -> dict | None:
     if brief_path is None or not brief_path.is_file():
         return None
-    raw_fm, _ = split_frontmatter(brief_path.read_text(encoding="utf-8"))
+    raw_fm, _ = split_frontmatter(brief_path.read_text(encoding="utf-8-sig"))
     if raw_fm is None:
         return None
     try:
-        fm = yaml.safe_load(raw_fm)
+        return parse_frontmatter_yaml(raw_fm)  # shared with the validator (incl. date-normalize)
     except yaml.YAMLError:
         return None
-    return fm if isinstance(fm, dict) else None
 
 
 def turn_discipline(transcript, brief_path, scenario):
@@ -124,7 +138,8 @@ def quick_cadence(transcript, brief_path, scenario):
     question lists — a quick-mode group must read as connected prose."""
     violations = []
     probe_rounds = 0
-    for m in _pre_synthesis_examiner_msgs(transcript):
+    pre = _pre_synthesis_examiner_msgs(transcript)
+    for m in pre:
         q = _question_count(m["text"])
         if q >= 2:
             probe_rounds += 1
@@ -137,6 +152,16 @@ def quick_cadence(transcript, brief_path, scenario):
     max_rounds = int(scenario.get("expected_max_question_rounds", 2))
     if probe_rounds > max_rounds:
         violations.append(f"{probe_rounds} grouped probe rounds (max {max_rounds})")
+    # Conservative devolution backstop (uncalibrated cutoff): a quick session should GROUP
+    # its probes. If it never groups (probe_rounds == 0) yet runs several single-question
+    # turns past the first two Phase-1 turns (thesis ask + steelman confirm), it silently
+    # ran a standard one-per-turn cadence — which the grouped-round count alone passes.
+    single_q = sum(1 for i, msg in enumerate(pre) if i >= 2 and _question_count(msg["text"]) == 1)
+    if probe_rounds == 0 and single_q >= 3:
+        violations.append(
+            f"{single_q} single-question turns, no grouped rounds — "
+            "ran one-question-per-turn (standard) cadence, not quick"
+        )
     return {
         "grader": "quick_cadence",
         "passed": not violations,
@@ -172,13 +197,35 @@ def brief_valid(transcript, brief_path, scenario):
     }
 
 
-_QUOTED_SPAN_RE = re.compile(r'[""]([^""]{15,300})[""]|"([^"]{15,300})"')
+_QUOTED_SPAN_RE = re.compile(
+    r'[""]([^""]{15,300})[""]'  # curly double quotes
+    r'|"([^"]{15,300})"'  # straight double quotes
+    r"|(?<![A-Za-z0-9])'([^']{15,300})'"  # straight single quotes (not an apostrophe)
+)
 
 
 def _normalize_quote(text: str) -> str:
     """Strip markdown emphasis and collapse whitespace so an examiner quote with added
     **bold** still matches the user's plain words."""
     return re.sub(r"\s+", " ", text.replace("*", "").replace("_", "")).strip().lower()
+
+
+def _quoted_spans(text: str) -> list[str]:
+    """Normalized quoted spans in an examiner message: inline curly/straight double and
+    straight single quotes, plus Markdown blockquote lines — the rubric asks the examiner
+    to 'quote both back', which a model may render as > blockquotes, not inline quotes."""
+    spans = []
+    for groups in _QUOTED_SPAN_RE.findall(text):
+        span = next((g for g in groups if g), "")
+        if span:
+            spans.append(_normalize_quote(span))
+    for line in text.splitlines():
+        stripped = line.lstrip()
+        if stripped.startswith(">"):
+            quoted = _normalize_quote(stripped.lstrip(">").strip())
+            if len(quoted) >= 15:
+                spans.append(quoted)
+    return spans
 
 
 def refutation_mechanics(transcript, brief_path, scenario):
@@ -198,8 +245,16 @@ def refutation_mechanics(transcript, brief_path, scenario):
         if m["role"] == "user":
             user_so_far += "\n" + _normalize_quote(m["text"])
             continue
-        spans = [_normalize_quote(a or b) for a, b in _QUOTED_SPAN_RE.findall(m["text"])]
-        hits = {s for s in spans if s and s in user_so_far}
+        # Scan only the pre-synthesis portion. A refuted brief's colliding_claims, printed
+        # in the wrap-up message, reproduce the user's words verbatim — scanning the whole
+        # message would let surfaced=True fire off the brief alone, with zero live elenchus.
+        # Mirror stop_honored's head/tail split.
+        # Truncate on brief-ECHO markers only (schema line, output path, or a required
+        # brief header) — NOT on a bare "Verdict:" label, which in live dialogue precedes
+        # the very quote-back a same-message refutation is built from.
+        marker = _BRIEF_ECHO_RE.search(m["text"])
+        scan_text = _strip_brief_and_fences(m["text"][: marker.start()] if marker else m["text"])
+        hits = {s for s in _quoted_spans(scan_text) if s and s in user_so_far}
         if len(hits) >= 2:
             surfaced = True
             break
@@ -253,9 +308,30 @@ def aporia_open_questions(transcript, brief_path, scenario):
     }
 
 
+def _tail_dialogue_questions(tail: str) -> int:
+    """Conversational questions in a wrap-up segment, ignoring the brief itself — its
+    fenced block, frontmatter (lowercase `key:` lines), headers, list items, and
+    blockquotes — so a trailing 'would you like me to also…?' is caught but the brief's
+    own open questions are not. Once a required brief header appears, every later line is
+    brief body (open-question prose can be un-fenced narrative)."""
+    n = 0
+    in_brief_body = False
+    for line in _strip_brief_and_fences(tail).splitlines():
+        s = line.strip()
+        if any(s.startswith(h) for h in REQUIRED_HEADERS):
+            in_brief_body = True
+        # Lowercase `key:` only — so a natural lead-in like "One more thing:" is not
+        # mistaken for a frontmatter key and skipped along with its trailing '?'.
+        if in_brief_body or not s or s[0] in "#-*>|" or re.match(r"^[a-z][a-z_]*:\s", s):
+            continue
+        n += s.count("?")
+    return n
+
+
 def stop_honored(transcript, brief_path, scenario):
-    """After the user's stop message, no examiner message asks another question
-    (the brief-carrying message is exempt from '?'-counting noise via fence stripping)."""
+    """After the user's stop message, no examiner message asks another question. The
+    wrap-up message is not exempted wholesale — only its synthesis segment is — so a
+    question smuggled into the verdict/brief turn (before or after the brief) is caught."""
     stop_idx = None
     for i, m in enumerate(transcript):
         if m["role"] == "user" and (
@@ -265,13 +341,21 @@ def stop_honored(transcript, brief_path, scenario):
             break
     if stop_idx is None:
         return {"grader": "stop_honored", "passed": False, "detail": "stop message never sent"}
-    violations = [
-        f"turn {m['turn']}: asked {_question_count(m['text'])} question(s) after stop"
-        for m in transcript[stop_idx + 1 :]
-        if m["role"] == "examiner"
-        and not _SYNTHESIS_RE.search(m["text"])
-        and _question_count(m["text"]) > 0
-    ]
+    violations = []
+    for m in transcript[stop_idx + 1 :]:
+        if m["role"] != "examiner":
+            continue
+        match = _SYNTHESIS_RE.search(m["text"])
+        if match:
+            # Count questions before the synthesis marker (dialogue) plus conversational
+            # questions after it, but never the brief's own content.
+            q = _question_count(m["text"][: match.start()]) + _tail_dialogue_questions(
+                m["text"][match.start() :]
+            )
+        else:
+            q = _question_count(m["text"])
+        if q > 0:
+            violations.append(f"turn {m['turn']}: asked {q} question(s) after stop")
     return {
         "grader": "stop_honored",
         "passed": not violations,
@@ -361,8 +445,11 @@ def session_claims_accurate(transcript, brief_path, scenario):
     lo = 0 if measured <= 2 else measured / 3
     # Upper bound is proportional, not flat: imperative probes ("walk me through...")
     # are real Phase 2 probes carrying no '?', so an imperative-heavy honest session
-    # can legitimately claim more than the '?'-count.
-    hi = measured * 1.5 + 2
+    # can legitimately claim more than the '?'-count. The flat floor of 6 (uncalibrated
+    # stopgap, NOT derived from the 5-session data) keeps an all-imperative session
+    # (measured≈0, where the proportional term collapses to 2) from failing an honest
+    # higher claim.
+    hi = max(measured * 1.5 + 2, 6)
     ok = lo <= claimed <= hi
     return {
         "grader": "session_claims_accurate",

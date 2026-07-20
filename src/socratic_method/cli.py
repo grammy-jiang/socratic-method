@@ -30,17 +30,22 @@ def _targets(raw: list[str]) -> list[str]:
     return list(PLATFORMS) if (not raw or "all" in raw) else list(dict.fromkeys(raw))
 
 
+# Rendering marks for every installer.OUTCOMES value (pinned by test_cli_marks_cover_outcomes).
+_OUTCOME_MARKS = {
+    "installed": "+",
+    "up-to-date": "=",
+    "skipped": "~",
+    "would-install": ">",
+    "would-remove": ">",
+    "blocked": "!",
+    "removed": "-",
+    "not-installed": " ",
+    "partial-or-modified": "!",
+}
+
+
 def _print_action(a) -> None:
-    mark = {
-        "installed": "+",
-        "up-to-date": "=",
-        "skipped": "~",
-        "would-install": ">",
-        "blocked": "!",
-        "removed": "-",
-        "not-installed": " ",
-        "partial-or-modified": "!",
-    }.get(a.outcome, "?")
+    mark = _OUTCOME_MARKS.get(a.outcome, "?")
     line = f" [{mark}] {a.platform:8s} {a.scope:8s} {a.outcome:20s} {a.target}"
     print(line)
     if a.detail:
@@ -105,7 +110,6 @@ def main(argv: list[str] | None = None) -> int:
     p_val.add_argument("brief", type=Path, help="path to the brief markdown file")
 
     args = parser.parse_args(argv)
-    home = Path.home()
 
     if args.command == "validate":
         errors = validate_idea_brief(args.brief)
@@ -114,6 +118,12 @@ def main(argv: list[str] | None = None) -> int:
         if not errors:
             print(f"OK: {args.brief} is a valid idea-brief-v1")
         return 0 if not errors else 1
+
+    try:
+        home = Path.home()  # only the install-side commands below need it
+    except RuntimeError as e:
+        print(f"error: cannot resolve home directory: {e}", file=sys.stderr)
+        return 1
 
     if args.command == "status":
         print(f"socratic-method {__version__} — install status (project root: {args.root})")

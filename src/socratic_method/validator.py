@@ -24,7 +24,7 @@ from pathlib import Path
 import jsonschema
 import yaml
 
-_REQUIRED_HEADERS = (
+REQUIRED_HEADERS = (
     "# Idea brief:",
     "## What changed under questioning",
     "## Scope",
@@ -51,10 +51,29 @@ def split_frontmatter(text: str) -> tuple[str | None, str]:
     """Return (frontmatter_yaml, body), or (None, text) when no frontmatter block."""
     if not text.startswith("---"):
         return None, text
-    parts = text.split("\n---", 2)
+    # Split only on the FIRST "\n---" (the closing fence). Splitting on every
+    # occurrence and reassembling silently dropped body lines that begin with
+    # "---" — e.g. a Markdown horizontal rule between two quoted claims, exactly
+    # where the verdict=refuted verbatim check reads the body.
+    parts = text.split("\n---", 1)
     if len(parts) < 2:
         return None, text
-    return parts[0].removeprefix("---").strip("\n"), parts[1] + (parts[2] if len(parts) > 2 else "")
+    return parts[0].removeprefix("---").strip("\n"), parts[1]
+
+
+def parse_frontmatter_yaml(raw_fm: str) -> dict | None:
+    """Parse a frontmatter YAML block to a mapping, or None if it is not one.
+
+    Raises ``yaml.YAMLError`` on malformed YAML (callers decide how to report it), and
+    normalizes a ``date:`` that YAML auto-parsed into a ``datetime.date`` back to an ISO
+    string — so the validator and the eval graders parse frontmatter one identical way.
+    """
+    fm = yaml.safe_load(raw_fm)
+    if not isinstance(fm, dict):
+        return None
+    if isinstance(fm.get("date"), datetime.date):
+        fm["date"] = fm["date"].isoformat()
+    return fm
 
 
 def validate_idea_brief(brief_path: str | Path) -> list[str]:
@@ -63,24 +82,25 @@ def validate_idea_brief(brief_path: str | Path) -> list[str]:
     errors: list[str] = []
 
     try:
-        text = path.read_text(encoding="utf-8")
-    except OSError as e:
+        # utf-8-sig transparently strips a leading BOM (a no-op otherwise), and
+        # UnicodeDecodeError (a ValueError, NOT an OSError) must be caught too, or a
+        # non-UTF-8 file crashes the CLI instead of returning the usual error string.
+        text = path.read_text(encoding="utf-8-sig")
+    except (OSError, UnicodeDecodeError) as e:
         return [f"Read error: {e}"]
 
     raw_fm, body = split_frontmatter(text)
     if raw_fm is None:
+        if text.startswith("---"):
+            return ["Unterminated YAML frontmatter block (opening --- found, no closing --- found)"]
         return ["No YAML frontmatter block (file must start with ---)"]
 
     try:
-        fm = yaml.safe_load(raw_fm)
+        fm = parse_frontmatter_yaml(raw_fm)
     except yaml.YAMLError as e:
         return [f"Frontmatter YAML parse error: {e}"]
-    if not isinstance(fm, dict):
+    if fm is None:
         return ["Frontmatter is not a mapping"]
-
-    # YAML parses an unquoted 2026-07-04 as datetime.date; normalize before schema check.
-    if isinstance(fm.get("date"), datetime.date):
-        fm["date"] = fm["date"].isoformat()
 
     try:
         schema = load_schema()
@@ -92,17 +112,23 @@ def validate_idea_brief(brief_path: str | Path) -> list[str]:
         for err in sorted(validator.iter_errors(fm), key=lambda e: list(e.path))
     )
 
-    for header in _REQUIRED_HEADERS:
+    for header in REQUIRED_HEADERS:
         if not any(line.startswith(header) for line in body.splitlines()):
             errors.append(f"body: missing required header '{header}'")
 
     if fm.get("verdict") == "refuted":
-        for i, claim in enumerate(fm.get("colliding_claims") or []):
-            if isinstance(claim, str) and claim not in body:
-                errors.append(
-                    f"colliding_claims[{i}]: not found verbatim in body — "
-                    "refutation must quote the colliding answers exactly"
-                )
+        # Iterate only a genuine list. A malformed scalar (e.g. `colliding_claims: 5`)
+        # is already reported by the schema check above; guarding here keeps this
+        # function's "always return, never raise" contract instead of crashing on
+        # enumerate() — the exact class of input this validator exists to police.
+        claims = fm.get("colliding_claims")
+        if isinstance(claims, list):
+            for i, claim in enumerate(claims):
+                if isinstance(claim, str) and claim not in body:
+                    errors.append(
+                        f"colliding_claims[{i}]: not found verbatim in body — "
+                        "refutation must quote the colliding answers exactly"
+                    )
 
     m = _FILENAME_RE.match(path.name)
     if m and isinstance(fm.get("idea"), str) and m.group("slug") != fm["idea"]:

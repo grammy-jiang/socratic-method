@@ -46,6 +46,18 @@ def test_config_dirs_detected_without_cli(tmp_path):
     assert d["copilot"] is None
 
 
+def test_cli_on_path_wins_over_config_dir(tmp_path):
+    # Precedence: a CLI on PATH must be reported over a config directory for the same agent.
+    home = tmp_path / "home"
+    (home / ".claude").mkdir(parents=True)  # config dir present...
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    _fake_exe(bindir, "claude")  # ...AND the CLI on PATH
+    d = detect_platforms(home, path_env=str(bindir))
+    assert "CLI on PATH" in d["claude"]
+    assert "config directory" not in d["claude"]
+
+
 def test_copilot_editor_extensions_detected(tmp_path):
     empty_bin = tmp_path / "bin"
     empty_bin.mkdir()

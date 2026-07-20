@@ -1,12 +1,9 @@
 """CLI smoke tests through main(argv)."""
 
-from pathlib import Path
-
 import pytest
+from conftest import GOLDEN
 
 from socratic_method.cli import main
-
-GOLDEN = Path(__file__).parent.parent / "evals" / "fixtures" / "tech-talk-series-20260704.md"
 
 
 def test_validate_golden_ok(capsys):
@@ -21,12 +18,16 @@ def test_validate_bad_file_fails(tmp_path, capsys):
     assert "ERROR" in capsys.readouterr().out
 
 
-def test_setup_all_dry_run_and_status(tmp_path, capsys):
+def test_setup_all_dry_run_and_status(tmp_path, monkeypatch, capsys):
+    # Hermetic: pin HOME to an empty dir so detection/status don't read the real machine.
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    (tmp_path / "home").mkdir()
     assert main(["setup", "all", "--dry-run", "--root", str(tmp_path)]) == 0
-    out = capsys.readouterr().out
-    assert "would-install" in out
+    assert "would-install" in capsys.readouterr().out
     assert main(["status", "--root", str(tmp_path)]) == 0
-    assert "agent claude" in capsys.readouterr().out  # status shows detection
+    out = capsys.readouterr().out
+    assert "agent claude" in out  # status shows detection
+    assert out.count("not-installed") == 5  # 3 project + 2 user scopes; dry-run wrote nothing
 
 
 def test_setup_autodetect_installs_only_detected(tmp_path, monkeypatch, capsys):
@@ -85,3 +86,47 @@ def test_setup_copy_flag_writes_regular_files(tmp_path, monkeypatch):
 def test_unknown_target_rejected(tmp_path):
     with pytest.raises(SystemExit):
         main(["setup", "cursor", "--root", str(tmp_path)])
+
+
+def test_setup_blocked_returns_exit_1(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    (tmp_path / "home").mkdir()
+    assert main(["setup", "claude", "--root", str(tmp_path)]) == 0
+    skill = tmp_path / ".claude/skills/socratic-method/SKILL.md"
+    skill.unlink()
+    skill.write_text("locally edited")  # now differs from packaged
+    assert main(["setup", "claude", "--root", str(tmp_path)]) == 1
+    assert "blocked" in capsys.readouterr().out
+
+
+def test_setup_user_scope_valueerror_returns_exit_1(tmp_path, capsys):
+    # Copilot has no user scope: skill_dir raises ValueError, caught into exit 1.
+    assert main(["setup", "copilot", "--scope", "user", "--root", str(tmp_path)]) == 1
+    assert "error:" in capsys.readouterr().out
+
+
+def test_remove_no_targets_expands_to_all(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    (tmp_path / "home").mkdir()
+    assert main(["setup", "claude", "codex", "--root", str(tmp_path)]) == 0
+    assert main(["remove", "--root", str(tmp_path)]) == 0  # no targets → all platforms
+    assert not (tmp_path / ".claude/skills/socratic-method").exists()
+    assert not (tmp_path / ".agents/skills/socratic-method").exists()
+
+
+def test_remove_dry_run_previews_without_removing(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    (tmp_path / "home").mkdir()
+    assert main(["setup", "claude", "--root", str(tmp_path)]) == 0
+    assert main(["remove", "claude", "--dry-run", "--root", str(tmp_path)]) == 0
+    assert "would-remove" in capsys.readouterr().out
+    assert (tmp_path / ".claude/skills/socratic-method/SKILL.md").exists()
+
+
+def test_outcome_marks_cover_every_outcome():
+    # cli's render marks must cover every value installer.OUTCOMES declares (they drifted
+    # once); this pins the single-source-of-truth relationship.
+    from socratic_method.cli import _OUTCOME_MARKS
+    from socratic_method.installer import OUTCOMES
+
+    assert set(OUTCOMES) <= set(_OUTCOME_MARKS)

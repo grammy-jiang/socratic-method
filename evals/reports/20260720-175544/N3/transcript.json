@@ -1,0 +1,37 @@
+[
+  {
+    "role": "examiner",
+    "turn": 1,
+    "text": "Thesis as I understand it: **You want to write an internal blog post making the case that your team/org should switch to trunk-based development** — presumably persuading engineers or leadership that this is a better way of working than whatever branching model is in use now.\n\nIs that a fair restatement, or is there a narrower goal (e.g., convincing a specific team, or just documenting a decision that's already made)?"
+  },
+  {
+    "role": "user",
+    "turn": 1,
+    "text": "Yeah, that's the fair restatement — persuading the ~80-engineer org to move to trunk-based development. It's not just documenting an already-made decision; nothing's decided yet. Motivation is we keep getting burned by feature branches that live two-plus weeks and rot, and I've got two recent incidents where stale branches caused real pain during merge/integration. Main goal is to get people on board before I push for an actual proposal or pilot."
+  },
+  {
+    "role": "examiner",
+    "turn": 2,
+    "text": "Got it — two concrete incidents plus a recurring pattern is a solid evidence base to start from.\n\nA few things worth nailing down before you draft: When you say \"trunk-based development,\" what does that actually mean in practice for this org — daily merges to main with feature flags, short-lived branches under a day, no branches at all? And who's the primary audience for this post — the engineers currently creating those two-week branches, or leadership who'd need to bless a policy change — since that shapes what \"persuading\" even looks like. Also, in the two incidents, was the root cause really branch *lifetime*, or something else that long branches happened to expose (missing CI gates, infrequent rebasing, weak code review turnaround) — is trunk-based the fix, or a fix?"
+  },
+  {
+    "role": "user",
+    "turn": 2,
+    "text": "Trunk-based is a hypothesis, but I've dug into this — both incidents trace back to branch age itself, not just missing safeguards. Branch A sat two and a half weeks and diverged enough that a config default changed underneath it, so the merge silently reintroduced a bug we'd already fixed on main. Branch B was similar timeframe — by the time it merged, three other teams had touched overlapping files and nobody caught the semantic conflict because CI only checks for syntactic ones. We do have decent CI gates and code review turnaround isn't the bottleneck; it's specifically that long-lived branches let reality drift out from under people. As for what \"trunk-based\" means in practice, I'm picturing short-lived branches (under a day, ideally just a few hours) merging straight to main behind feature flags for anything not ready to ship — not literally zero branches. Primary audience is the engineers creating the two-week branches, since they're the ones who'd need to change habits; I'll worry about a formal leadership ask separately once there's buy-in from the floor."
+  },
+  {
+    "role": "examiner",
+    "turn": 3,
+    "text": "A couple more threads before synthesis: What's actually driving branches to run two-plus weeks today — is it feature scope that's hard to slice smaller, lack of feature-flag tooling to hide unfinished work, or something in how work gets planned/sized — since telling people \"branch for less time\" doesn't help if the underlying cause is still there? Relatedly, do you already have feature-flag infrastructure the org uses, or would \"flags for anything not ready to ship\" be a second ask bundled inside this one? And when you picture the pushback from the engineers themselves, what's the strongest version of it — is it \"our feature genuinely needs isolation,\" \"we don't trust CI enough to merge unfinished work into main,\" something else — and does the post answer that, or does it mostly lean on the two incidents as evidence?"
+  },
+  {
+    "role": "user",
+    "turn": 3,
+    "text": "Underlying driver is scope, not just habit — features tend to get sized around a whole capability rather than sliceable increments, so people naturally default to a long branch instead of shipping thin vertical slices. We do have feature-flag tooling already in use for a couple of years, so \"flags for unfinished work\" isn't a new ask, just underused for this purpose — that's worth calling out explicitly so it doesn't read as two asks stacked together. Strongest pushback I'd expect is \"our feature genuinely needs isolation because it touches shared state/schema and a half-done version behind a flag could still break things for others\" — that's a fair objection and I don't think the post currently answers it well beyond the two incidents; I'd want to add something concrete about how flag-gated incremental merges handle schema/shared-state changes specifically, not just UI-visible features."
+  },
+  {
+    "role": "examiner",
+    "turn": 4,
+    "text": "Self-check passed: all required frontmatter keys are present and enum-valid, every assumption has a status, `questions_asked` is a recount (6, not an estimate), and `verdict: aporia` matches a non-empty `open_questions`. Note the double-hyphen `--` renders as an em dash in some viewers, but it's plain ASCII in the file, so it won't trip markdown tooling.\n\n---\n\n# Idea brief: Trunk-based development blog post\n\n**Verdict: aporia** — one genuine unresolved hole, not a failure of the rest of the thesis.\n\n## What changed under questioning\nInitial: write a post arguing the org should adopt trunk-based development.\nFinal: same core argument, but scoped to branches-under-a-day merging to main behind the org's existing (2-year-old) feature-flag tooling, aimed first at the engineers who create the long branches rather than leadership, grounded in two root-caused incidents rather than a general preference.\n\n## Scope\nTarget audience: the ~80 engineers currently running two-plus-week branches — not a leadership ask, which is deliberately deferred. \"Trunk-based\" means short-lived branches (hours, not weeks) plus flags for anything unfinished, not zero branching.\n\n## Assumptions surfaced\n- Branch *age* itself (not missing CI/review) drove both incidents — validated by the user's own incident tracing.\n- Branches run long because features are sized as whole capabilities, not sliceable increments — validated, user's own diagnosis.\n- Existing flag tooling covers shared-state/schema changes, not just UI-visible ones — **risky, unresolved**.\n- Engineers (not leadership) are the right first audience — unvalidated assumption.\n\n## Open questions (aporia)\nHow does flag-gated incremental merging handle a feature that touches shared state or schema, where a half-done version behind a flag could still break things for other teams? This is the exact objection the target audience will raise first, and by the user's own admission the post doesn't answer it yet.\n\n## Suggested next step\nWork out a concrete answer for the shared-state/schema case before drafting further — it's the load-bearing gap between your evidence and your toughest expected pushback.\n\nBrief saved to `notes/idea-briefs/trunk-based-development-post-20260720.md`."
+  }
+]

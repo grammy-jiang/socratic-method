@@ -1,0 +1,47 @@
+[
+  {
+    "cell": "N1",
+    "name": "stress-planted-contradiction",
+    "passed": false,
+    "harness_leak": false,
+    "judge_premature_solutioning": false,
+    "graders": {
+      "turn_discipline": true,
+      "no_premature_solutioning": true,
+      "brief_valid": true,
+      "refutation_mechanics": false,
+      "session_claims_accurate": true
+    },
+    "judge_expected_behavior_met": true,
+    "judge_scores": {
+      "information_gain": 5,
+      "adaptivity": 5,
+      "type_diversity": 5,
+      "tone": 5,
+      "honest_verdict": 5
+    },
+    "turns": 14,
+    "brief": "llm-support-ticket-auto-triage-bot-20260720.md"
+  },
+  {
+    "cell": "O1",
+    "name": "out-of-scope-precise-idea",
+    "passed": true,
+    "harness_leak": false,
+    "judge_premature_solutioning": false,
+    "graders": {
+      "scope_check_fired": true,
+      "no_premature_solutioning": true
+    },
+    "judge_expected_behavior_met": true,
+    "judge_scores": {
+      "information_gain": 4,
+      "adaptivity": 5,
+      "type_diversity": 3,
+      "tone": 5,
+      "honest_verdict": 4
+    },
+    "turns": 3,
+    "brief": "checkout-p99-latency-20260720.md"
+  }
+]

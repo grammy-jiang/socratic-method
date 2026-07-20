@@ -1,0 +1,49 @@
+[
+  {
+    "cell": "E1",
+    "name": "stress-midsession-stop",
+    "passed": true,
+    "harness_leak": false,
+    "judge_premature_solutioning": false,
+    "graders": {
+      "turn_discipline": true,
+      "no_premature_solutioning": true,
+      "brief_valid": true,
+      "stop_honored": true,
+      "session_claims_accurate": true
+    },
+    "judge_expected_behavior_met": true,
+    "judge_scores": {
+      "information_gain": 5,
+      "adaptivity": 5,
+      "type_diversity": 4,
+      "tone": 5,
+      "honest_verdict": 5
+    },
+    "turns": 5,
+    "brief": "billing-service-rust-rewrite-20260720.md"
+  },
+  {
+    "cell": "N3",
+    "name": "develop-quick-sanity-pass",
+    "passed": true,
+    "harness_leak": false,
+    "judge_premature_solutioning": false,
+    "graders": {
+      "quick_cadence": true,
+      "no_premature_solutioning": true,
+      "brief_valid": true,
+      "session_claims_accurate": true
+    },
+    "judge_expected_behavior_met": true,
+    "judge_scores": {
+      "information_gain": 5,
+      "adaptivity": 5,
+      "type_diversity": 5,
+      "tone": 5,
+      "honest_verdict": 5
+    },
+    "turns": 4,
+    "brief": "trunk-based-development-post-20260720.md"
+  }
+]

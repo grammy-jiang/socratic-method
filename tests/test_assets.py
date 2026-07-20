@@ -7,6 +7,7 @@ which ignores the frontmatter key).
 """
 
 from importlib.resources import files
+from pathlib import Path
 
 import yaml
 
@@ -32,3 +33,14 @@ def test_codex_sidecar_disables_implicit_invocation():
 def test_codex_sidecar_is_a_managed_file():
     # The sidecar must ship with every install, or Codex installs lose the policy.
     assert "agents/openai.yaml" in MANAGED_FILES
+
+
+def test_example_session_embeds_golden_fixture():
+    # SKILL.md tells the model to consult example-session.md before writing its first
+    # brief; its worked deliverable duplicates the golden eval fixture verbatim. The two
+    # are hand-maintained separately, so pin them together to catch silent drift.
+    example = _asset("references/example-session.md")
+    fixture = (
+        Path(__file__).parent.parent / "evals" / "fixtures" / "tech-talk-series-20260704.md"
+    ).read_text(encoding="utf-8")
+    assert fixture.strip() in example
