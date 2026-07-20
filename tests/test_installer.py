@@ -7,6 +7,7 @@ from socratic_method.installer import (
     MANAGED_FILES,
     PLATFORMS,
     asset_path,
+    file_state,
     install,
     install_state,
     packaged_content,
@@ -188,14 +189,14 @@ def test_uninstall_removes_locally_modified_file(roots):
 
 
 def test_install_post_write_verification_failure_blocks(roots, monkeypatch):
-    # The readback-and-compare step is "the failure mode this skill exists to prevent";
-    # drive it by reporting missing pre-write (so install proceeds) then differs post-write.
+    # The readback-and-compare step is "the failure mode this skill exists to prevent".
+    # Key the fake on real filesystem state (nothing yet -> missing, so install proceeds;
+    # written files -> differs, so verification fails) rather than a call counter, so the
+    # test stays valid if install() ever changes how many times it calls file_state.
     root, home = roots
-    seen = {"n": 0}
 
     def fake_file_state(target, rel):
-        seen["n"] += 1
-        return "missing" if seen["n"] <= len(MANAGED_FILES) else "differs"
+        return "differs" if (target / rel).exists() else "missing"
 
     monkeypatch.setattr("socratic_method.installer.file_state", fake_file_state)
     a = install("claude", "project", root, home)
@@ -251,3 +252,52 @@ def test_copilot_installs_when_claude_only_partial(roots):
     a = install("copilot", "project", root, home)
     assert a.outcome == "installed"
     assert ".github/skills" in str(a.target)
+
+
+def test_status_reports_copilot_covered_by_claude(roots):
+    # status() must agree with install()'s dedupe: covered Copilot is "skipped", not
+    # "not-installed" (the read side and the write side must not contradict each other).
+    root, home = roots
+    install("claude", "project", root, home)
+    by_key = {(a.platform, a.scope): a for a in status(root, home)}
+    covered = by_key[("copilot", "project")]
+    assert covered.outcome == "skipped"
+    assert "covered by" in covered.detail
+
+
+def test_uninstall_blocked_on_unlink_oserror(roots, monkeypatch):
+    # A permission error during remove must degrade to a blocked Action (so `remove` with
+    # no targets does not abort the remaining platforms), mirroring install()'s guard.
+    root, home = roots
+    install("claude", "project", root, home)
+
+    def boom(self, missing_ok=False):
+        raise PermissionError("read-only mount")
+
+    monkeypatch.setattr("pathlib.Path.unlink", boom)
+    a = uninstall("claude", "project", root, home)
+    assert a.outcome == "blocked"
+    assert "remove failed for" in a.detail
+
+
+def test_file_state_unreadable_file_reads_as_differs(roots, monkeypatch):
+    # An existing-but-unreadable managed file must not crash file_state (and thus status).
+    root, home = roots
+    install("claude", "project", root, home, copy=True)
+    target = skill_dir(PLATFORMS["claude"], "project", root, home)
+
+    def boom(self):
+        raise PermissionError("no read")
+
+    monkeypatch.setattr("pathlib.Path.read_bytes", boom)
+    assert file_state(target, "SKILL.md") == "differs"
+
+
+def test_unknown_platform_raises_valueerror(roots):
+    # install/uninstall are public API; an unknown key must raise ValueError (cli.py's
+    # caught type), not a raw KeyError.
+    root, home = roots
+    with pytest.raises(ValueError, match="unknown platform"):
+        install("cursor", "project", root, home)
+    with pytest.raises(ValueError, match="unknown platform"):
+        uninstall("cursor", "project", root, home)

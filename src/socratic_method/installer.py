@@ -161,9 +161,14 @@ def file_state(target: Path, rel: str) -> str:
     dst = target / rel
     if not dst.is_file():
         return "missing"
-    return (
-        "up-to-date" if _digest(dst.read_bytes()) == _digest(packaged_content(rel)) else "differs"
-    )
+    try:
+        current = dst.read_bytes()
+    except OSError:
+        # An existing but unreadable file (permissions revoked, mount quirk): treat as
+        # differing so status() can report it and install() routes through the --force
+        # path — never an uncaught OSError that crashes every caller, status included.
+        return "differs"
+    return "up-to-date" if _digest(current) == _digest(packaged_content(rel)) else "differs"
 
 
 def install_state(target: Path) -> str:
@@ -176,14 +181,52 @@ def install_state(target: Path) -> str:
     return "partial-or-modified"
 
 
+def has_leftovers(target: Path) -> bool:
+    """Any managed path present as a symlink (including a dangling one, which reads as
+    'missing' to file_state) — i.e. is there anything on disk for uninstall to sweep,
+    independent of whether it is a valid content install."""
+    return any((target / rel).is_symlink() for rel in MANAGED_FILES)
+
+
+def _copilot_covered_by_claude(root: Path, home: Path) -> Path | None:
+    """The Claude project-scope target that already covers a project-scope Copilot install
+    (Copilot reads .claude/skills), or None. One source for both install()'s dedupe and
+    status()'s report, so the write side and the read side never disagree."""
+    claude_target = skill_dir(PLATFORMS["claude"], "project", root, home)
+    return claude_target if install_state(claude_target) == "up-to-date" else None
+
+
+def _resolve_platform(platform_key: str) -> Platform:
+    """Look up a platform, raising ValueError (the module's convention for a bad argument,
+    which cli.py catches) instead of a raw KeyError for an unknown key."""
+    try:
+        return PLATFORMS[platform_key]
+    except KeyError:
+        raise ValueError(
+            f"unknown platform '{platform_key}' (choose from {', '.join(PLATFORMS)})"
+        ) from None
+
+
+# Every value Action.outcome can take — the single source of truth cli.py renders from.
+OUTCOMES = (
+    "installed",
+    "up-to-date",
+    "skipped",
+    "would-install",
+    "would-remove",
+    "blocked",
+    "removed",
+    "not-installed",
+    "partial-or-modified",
+)
+
+
 @dataclass
 class Action:
     platform: str
     scope: str
     target: Path
-    # 'installed' | 'up-to-date' | 'skipped' | 'would-install' | 'would-remove' |
-    # 'blocked' | 'removed' | 'not-installed' | 'partial-or-modified'
-    outcome: str
+    outcome: str  # one of OUTCOMES
     detail: str = ""
 
 
@@ -197,19 +240,19 @@ def install(
     dry_run: bool = False,
     copy: bool = False,
 ) -> Action:
-    platform = PLATFORMS[platform_key]
+    platform = _resolve_platform(platform_key)
     target = skill_dir(platform, scope, root, home)
 
     # Copilot dedupe: a project-scope Claude install in the same root already covers it.
     if platform_key == "copilot" and scope == "project" and not force:
-        claude_target = skill_dir(PLATFORMS["claude"], "project", root, home)
-        if install_state(claude_target) == "up-to-date":
+        covered_by = _copilot_covered_by_claude(root, home)
+        if covered_by is not None:
             return Action(
                 platform_key,
                 scope,
                 target,
                 "skipped",
-                f"Copilot reads .claude/skills — already covered by {claude_target} "
+                f"Copilot reads .claude/skills — already covered by {covered_by} "
                 "(use --force to install to .github/skills anyway)",
             )
 
@@ -255,11 +298,15 @@ def install(
             dst.write_bytes(packaged_content(rel))
             copied.append(rel)
         except OSError as e:
-            # A path occupied by an incompatible node (a directory where a file must
-            # go, a file where references/ must go) must degrade to a reported failure,
-            # matching the module's "every failure returns an Action" contract, not a
-            # bare traceback mid-loop.
-            return Action(platform_key, scope, target, "blocked", f"write failed for {rel}: {e}")
+            # A path occupied by an incompatible node (a directory where a file must go,
+            # a file where references/ must go) must degrade to a reported failure, not a
+            # bare traceback mid-loop. Name what was already written so "blocked" is not
+            # misread as "nothing happened".
+            written = linked + copied
+            done = f" ({len(written)} already written: {', '.join(written)})" if written else ""
+            return Action(
+                platform_key, scope, target, "blocked", f"write failed for {rel}: {e}{done}"
+            )
 
     # Verify before claiming: read back every file (through the link) from disk.
     unverified = [rel for rel in MANAGED_FILES if file_state(target, rel) != "up-to-date"]
@@ -289,16 +336,20 @@ def uninstall(
     platform_key: str, scope: str, root: Path, home: Path, *, dry_run: bool = False
 ) -> Action:
     """Revert an install (CLI: ``remove``, with ``uninstall`` kept as an alias)."""
-    platform = PLATFORMS[platform_key]
+    platform = _resolve_platform(platform_key)
     target = skill_dir(platform, scope, root, home)
     # Dangling symlinks read as 'missing' to install_state; still clean them up.
-    leftovers = any((target / rel).is_symlink() for rel in MANAGED_FILES)
-    if install_state(target) == "not-installed" and not leftovers:
+    if install_state(target) == "not-installed" and not has_leftovers(target):
         return Action(platform_key, scope, target, "not-installed")
     if dry_run:
         return Action(platform_key, scope, target, "would-remove", "would remove managed files")
     for rel in MANAGED_FILES:
-        (target / rel).unlink(missing_ok=True)
+        try:
+            (target / rel).unlink(missing_ok=True)
+        except OSError as e:
+            # Mirror install()'s guard: a permission error on one platform must not abort
+            # the others when `remove` (no targets) expands to all of them.
+            return Action(platform_key, scope, target, "blocked", f"remove failed for {rel}: {e}")
     # Remove now-empty directories we own, innermost first.
     for d in sorted({(target / rel).parent for rel in MANAGED_FILES} | {target}, reverse=True):
         with contextlib.suppress(OSError):  # not empty — user files present; leave them
@@ -313,5 +364,14 @@ def status(root: Path, home: Path) -> list[Action]:
             if scope == "user" and platform.user_dir is None:
                 continue
             target = skill_dir(platform, scope, root, home)
-            out.append(Action(key, scope, target, install_state(target)))
+            state = install_state(target)
+            # Reflect install()'s Copilot dedupe: a not-installed project Copilot that a
+            # Claude install already covers is "skipped", not "not-installed" — so status
+            # (the read side) agrees with what setup (the write side) would report.
+            if key == "copilot" and scope == "project" and state == "not-installed":
+                covered_by = _copilot_covered_by_claude(root, home)
+                if covered_by is not None:
+                    out.append(Action(key, scope, target, "skipped", f"covered by {covered_by}"))
+                    continue
+            out.append(Action(key, scope, target, state))
     return out

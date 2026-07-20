@@ -1,12 +1,9 @@
 """CLI smoke tests through main(argv)."""
 
-from pathlib import Path
-
 import pytest
+from conftest import GOLDEN
 
 from socratic_method.cli import main
-
-GOLDEN = Path(__file__).parent.parent / "evals" / "fixtures" / "tech-talk-series-20260704.md"
 
 
 def test_validate_golden_ok(capsys):
@@ -21,12 +18,16 @@ def test_validate_bad_file_fails(tmp_path, capsys):
     assert "ERROR" in capsys.readouterr().out
 
 
-def test_setup_all_dry_run_and_status(tmp_path, capsys):
+def test_setup_all_dry_run_and_status(tmp_path, monkeypatch, capsys):
+    # Hermetic: pin HOME to an empty dir so detection/status don't read the real machine.
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    (tmp_path / "home").mkdir()
     assert main(["setup", "all", "--dry-run", "--root", str(tmp_path)]) == 0
-    out = capsys.readouterr().out
-    assert "would-install" in out
+    assert "would-install" in capsys.readouterr().out
     assert main(["status", "--root", str(tmp_path)]) == 0
-    assert "agent claude" in capsys.readouterr().out  # status shows detection
+    out = capsys.readouterr().out
+    assert "agent claude" in out  # status shows detection
+    assert out.count("not-installed") == 5  # 3 project + 2 user scopes; dry-run wrote nothing
 
 
 def test_setup_autodetect_installs_only_detected(tmp_path, monkeypatch, capsys):
@@ -120,3 +121,12 @@ def test_remove_dry_run_previews_without_removing(tmp_path, monkeypatch, capsys)
     assert main(["remove", "claude", "--dry-run", "--root", str(tmp_path)]) == 0
     assert "would-remove" in capsys.readouterr().out
     assert (tmp_path / ".claude/skills/socratic-method/SKILL.md").exists()
+
+
+def test_outcome_marks_cover_every_outcome():
+    # cli's render marks must cover every value installer.OUTCOMES declares (they drifted
+    # once); this pins the single-source-of-truth relationship.
+    from socratic_method.cli import _OUTCOME_MARKS
+    from socratic_method.installer import OUTCOMES
+
+    assert set(OUTCOMES) <= set(_OUTCOME_MARKS)

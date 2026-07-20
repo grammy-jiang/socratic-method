@@ -9,3 +9,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "evals"))
+
+# Single source for the golden fixture path (was duplicated across three test files).
+GOLDEN = (
+    Path(__file__).resolve().parent.parent / "evals" / "fixtures" / "tech-talk-series-20260704.md"
+)

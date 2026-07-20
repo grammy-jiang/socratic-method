@@ -49,8 +49,9 @@ uv build && uvx twine check dist/*               # what the release build job ru
 - Python floor is 3.11, kept in sync across four places: `requires-python`, the trove
   classifiers, the CI test matrix, and `[tool.ruff] target-version`.
 - `uv.lock` is gitignored on purpose — do not commit a lockfile.
-- Tests require a full repo checkout: `tests/test_cli.py` and `tests/test_validator.py`
-  reach into `evals/fixtures/` by relative path.
+- Tests require a full repo checkout: the golden fixture path is defined once as
+  `GOLDEN` in `tests/conftest.py` (which also puts `evals/` on `sys.path` so the pure
+  eval graders can be unit-tested) and imported by test_validator/test_cli/test_graders.
 - Pre-commit gates EVERY file you add, markdown included: LF endings, no trailing
   whitespace, exactly one final newline. One tool per file type is policy — never add a
   markdown formatter (it would reflow the shipped `SKILL.md`) or a second Python linter.
@@ -94,9 +95,11 @@ all:
 2. `src/socratic_method/assets/SKILL.md` Phase 4 brief template
 3. `src/socratic_method/validator.py` `_REQUIRED_HEADERS` (body headers, matched by
    `startswith`)
-4. `evals/fixtures/tech-talk-series-20260704.md` (golden fixture; referenced by literal
-   path from both test files AND the CI smoke step; its filename slug must equal its
-   frontmatter `idea`)
+4. `evals/fixtures/tech-talk-series-20260704.md` (golden fixture; referenced via
+   `tests/conftest.py`'s `GOLDEN` constant from test_validator/test_cli/test_graders AND
+   by literal path in the CI smoke step; also embedded verbatim in
+   `references/example-session.md`, pinned by `test_assets.py`; its filename slug must
+   equal its frontmatter `idea`)
 5. `evals/graders.py` (brief markers and frontmatter-dependent graders)
 6. `tests/test_validator.py` expected error substrings
 

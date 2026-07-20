@@ -2,13 +2,11 @@
 be caught by their INTENDED rule (not merely caught by something)."""
 
 import re
-from pathlib import Path
 
 import pytest
+from conftest import GOLDEN
 
 from socratic_method.validator import split_frontmatter, validate_idea_brief
-
-GOLDEN = Path(__file__).parent.parent / "evals" / "fixtures" / "tech-talk-series-20260704.md"
 
 MUTATIONS = {
     "refuted-without-colliding-claims": (
@@ -122,9 +120,12 @@ def test_non_mapping_frontmatter_reported(tmp_path):
 
 
 def test_unterminated_frontmatter_reported(tmp_path):
+    # Opens with --- but has no closing fence: distinct message from "no frontmatter".
     p = tmp_path / "x-20260704.md"
     p.write_text("---\nschema: idea-brief-v1\n", encoding="utf-8")
-    assert validate_idea_brief(p) == ["No YAML frontmatter block (file must start with ---)"]
+    assert validate_idea_brief(p) == [
+        "Unterminated YAML frontmatter block (opening --- found, no closing --- found)"
+    ]
 
 
 def test_title_header_prefix_is_intentional(tmp_path):

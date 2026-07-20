@@ -61,6 +61,21 @@ def split_frontmatter(text: str) -> tuple[str | None, str]:
     return parts[0].removeprefix("---").strip("\n"), parts[1]
 
 
+def parse_frontmatter_yaml(raw_fm: str) -> dict | None:
+    """Parse a frontmatter YAML block to a mapping, or None if it is not one.
+
+    Raises ``yaml.YAMLError`` on malformed YAML (callers decide how to report it), and
+    normalizes a ``date:`` that YAML auto-parsed into a ``datetime.date`` back to an ISO
+    string — so the validator and the eval graders parse frontmatter one identical way.
+    """
+    fm = yaml.safe_load(raw_fm)
+    if not isinstance(fm, dict):
+        return None
+    if isinstance(fm.get("date"), datetime.date):
+        fm["date"] = fm["date"].isoformat()
+    return fm
+
+
 def validate_idea_brief(brief_path: str | Path) -> list[str]:
     """Return list of error strings. Empty list = valid."""
     path = Path(brief_path)
@@ -76,18 +91,16 @@ def validate_idea_brief(brief_path: str | Path) -> list[str]:
 
     raw_fm, body = split_frontmatter(text)
     if raw_fm is None:
+        if text.startswith("---"):
+            return ["Unterminated YAML frontmatter block (opening --- found, no closing --- found)"]
         return ["No YAML frontmatter block (file must start with ---)"]
 
     try:
-        fm = yaml.safe_load(raw_fm)
+        fm = parse_frontmatter_yaml(raw_fm)
     except yaml.YAMLError as e:
         return [f"Frontmatter YAML parse error: {e}"]
-    if not isinstance(fm, dict):
+    if fm is None:
         return ["Frontmatter is not a mapping"]
-
-    # YAML parses an unquoted 2026-07-04 as datetime.date; normalize before schema check.
-    if isinstance(fm.get("date"), datetime.date):
-        fm["date"] = fm["date"].isoformat()
 
     try:
         schema = load_schema()
