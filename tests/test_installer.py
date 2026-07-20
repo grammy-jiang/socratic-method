@@ -307,20 +307,33 @@ def test_unknown_platform_raises_valueerror(roots):
 def test_copilot_installed_reports_up_to_date_not_skipped(roots):
     # Regression: the dedupe used to fire before checking Copilot's OWN state, masking an
     # already-installed Copilot as "skipped" (disagreeing with status()'s "up-to-date").
+    # copy=True so has_leftovers() is False — the `state` conjunct is what's under test
+    # here (with symlinks, has_leftovers alone would gate the branch and hide the fix).
     root, home = roots
-    install("copilot", "project", root, home)  # copilot itself installed first
+    install("copilot", "project", root, home, copy=True)  # real files, not symlinks
     install("claude", "project", root, home)  # claude now also covers it
     assert install("copilot", "project", root, home).outcome == "up-to-date"
 
 
 def test_copilot_modified_reports_blocked_not_skipped(roots):
     root, home = roots
-    install("copilot", "project", root, home)
+    install("copilot", "project", root, home, copy=True)  # real files (isolate `state`)
     install("claude", "project", root, home)
     cop = skill_dir(PLATFORMS["copilot"], "project", root, home)
     (cop / "SKILL.md").unlink()
     (cop / "SKILL.md").write_text("locally edited")
     assert install("copilot", "project", root, home).outcome == "blocked"
+
+
+def test_copilot_dangling_leftovers_installs_not_skipped(roots):
+    # The OTHER dedupe conjunct: not-installed but with a dangling symlink → has_leftovers
+    # is True, so the dedupe must NOT fire; install proceeds and clears the stale link.
+    root, home = roots
+    install("claude", "project", root, home)  # claude would otherwise cover copilot
+    cop = skill_dir(PLATFORMS["copilot"], "project", root, home)
+    cop.mkdir(parents=True)
+    (cop / "SKILL.md").symlink_to(root / "gone" / "SKILL.md")  # dangling
+    assert install("copilot", "project", root, home).outcome == "installed"
 
 
 def test_has_leftovers_true_on_oserror(roots, monkeypatch):

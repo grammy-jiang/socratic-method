@@ -305,4 +305,8 @@ def test_stop_honored_flags_question_before_unfenced_brief_body():
             "# Idea brief: x\n## Open questions (aporia)\nwho is it for?",
         ),
     ]
-    assert stop_honored(transcript, None, {})["passed"] is False
+    r = stop_honored(transcript, None, {})
+    assert r["passed"] is False
+    # Pin the COUNT: in_brief_body must suppress the brief's own "who is it for?" so only
+    # the genuine pre-header question counts (reverting in_brief_body → "2 question(s)").
+    assert "asked 1 question(s) after stop" in r["detail"]
