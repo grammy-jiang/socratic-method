@@ -19,7 +19,7 @@ from pathlib import Path
 import yaml
 
 from socratic_method.validator import (
-    _REQUIRED_HEADERS,
+    REQUIRED_HEADERS,
     parse_frontmatter_yaml,
     split_frontmatter,
     validate_idea_brief,
@@ -31,6 +31,15 @@ _BRIEF_MARKER = "schema: idea-brief-v1"
 # rather than embedding the frontmatter, so detect any of the wrap-up signatures.
 # Built from _BRIEF_MARKER so the marker string has a single source.
 _SYNTHESIS_RE = re.compile(rf"{re.escape(_BRIEF_MARKER)}|notes/idea-briefs/|\*\*Verdict|\bVerdict:")
+
+# Brief-ECHO markers only (the printed brief's own content is starting) — a stricter set
+# than _SYNTHESIS_RE, which also matches the bare "Verdict:" prose label that in live
+# dialogue routinely PRECEDES the quote-back a same-message refutation is built from.
+_BRIEF_ECHO_RE = re.compile(
+    "|".join(
+        [re.escape(_BRIEF_MARKER), "notes/idea-briefs/", *(re.escape(h) for h in REQUIRED_HEADERS)]
+    )
+)
 
 _SOLUTIONING_MARKERS = (
     "i'd suggest",
@@ -96,7 +105,7 @@ def _pre_synthesis_examiner_msgs(transcript: list[dict]) -> list[dict]:
 def _load_frontmatter(brief_path: Path | None) -> dict | None:
     if brief_path is None or not brief_path.is_file():
         return None
-    raw_fm, _ = split_frontmatter(brief_path.read_text(encoding="utf-8"))
+    raw_fm, _ = split_frontmatter(brief_path.read_text(encoding="utf-8-sig"))
     if raw_fm is None:
         return None
     try:
@@ -240,7 +249,10 @@ def refutation_mechanics(transcript, brief_path, scenario):
         # in the wrap-up message, reproduce the user's words verbatim — scanning the whole
         # message would let surfaced=True fire off the brief alone, with zero live elenchus.
         # Mirror stop_honored's head/tail split.
-        marker = _SYNTHESIS_RE.search(m["text"])
+        # Truncate on brief-ECHO markers only (schema line, output path, or a required
+        # brief header) — NOT on a bare "Verdict:" label, which in live dialogue precedes
+        # the very quote-back a same-message refutation is built from.
+        marker = _BRIEF_ECHO_RE.search(m["text"])
         scan_text = _strip_brief_and_fences(m["text"][: marker.start()] if marker else m["text"])
         hits = {s for s in _quoted_spans(scan_text) if s and s in user_so_far}
         if len(hits) >= 2:
@@ -306,7 +318,7 @@ def _tail_dialogue_questions(tail: str) -> int:
     in_brief_body = False
     for line in _strip_brief_and_fences(tail).splitlines():
         s = line.strip()
-        if any(s.startswith(h) for h in _REQUIRED_HEADERS):
+        if any(s.startswith(h) for h in REQUIRED_HEADERS):
             in_brief_body = True
         # Lowercase `key:` only — so a natural lead-in like "One more thing:" is not
         # mistaken for a frontmatter key and skipped along with its trailing '?'.

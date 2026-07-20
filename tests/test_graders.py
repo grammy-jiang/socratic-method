@@ -267,3 +267,42 @@ def test_refutation_mechanics_ignores_brief_only_quotes(tmp_path):
     ]
     good = _refuted_brief(tmp_path / "r-20260101.md", _U2)
     assert refutation_mechanics(transcript, good, {})["passed"] is False
+
+
+def test_refutation_mechanics_accepts_verdict_label_before_quotes(tmp_path):
+    # Regression: truncating on _SYNTHESIS_RE dropped quotes that follow a bare "Verdict:"
+    # label in the same message — the natural same-message refutation must be recognised.
+    transcript = [
+        _t("user", 1, _U1),
+        _t("user", 2, _U2),
+        _t("examiner", 3, f'Verdict: refuted. You said "{_U1}" but also "{_U2}".'),
+    ]
+    good = _refuted_brief(tmp_path / "r-20260101.md", _U2)
+    assert refutation_mechanics(transcript, good, {})["passed"] is True
+
+
+def test_stop_honored_passes_unfenced_brief_with_open_question():
+    # in_brief_body: the brief's own (un-fenced) open question must not count as a probe.
+    transcript = [
+        _t("user", 1, "that's enough"),
+        _t(
+            "examiner",
+            1,
+            "Verdict: aporia.\n# Idea brief: x\n## Open questions (aporia)\nwho is it for?",
+        ),
+    ]
+    assert stop_honored(transcript, None, {})["passed"] is True
+
+
+def test_stop_honored_flags_question_before_unfenced_brief_body():
+    # A genuine trailing question that PRECEDES the un-fenced brief body is still caught.
+    transcript = [
+        _t("user", 1, "that's enough"),
+        _t(
+            "examiner",
+            1,
+            "Verdict: sharpened. One more — should I also flag the tooling risk?\n"
+            "# Idea brief: x\n## Open questions (aporia)\nwho is it for?",
+        ),
+    ]
+    assert stop_honored(transcript, None, {})["passed"] is False

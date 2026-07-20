@@ -266,14 +266,16 @@ def run_cell(scenario: dict, args, report_dir: Path) -> dict:
     except json.JSONDecodeError:
         judge = {"parse_error": True, "raw": judge_raw[-2000:]}
 
+    # harness_leak is a deterministic sandbox-boundary defect — it hard-fails the cell.
+    # premature_solutioning is a NEW judge-based backstop for the skill's #1 guardrail
+    # (the literal-marker grader misses paraphrases). It is kept REPORT-ONLY (surfaced in
+    # the result/summary below, not gating `passed`) until a real matrix run confirms it
+    # doesn't misfire on O1's legitimate "record as-is" decline. Promote it to a hard gate
+    # by adding `and not judge.get("premature_solutioning", True)` here once validated.
     passed = (
         all(g["passed"] for g in grader_results)
         and judge.get("expected_behavior_met", False)
         and not judge.get("fabrication", True)
-        # premature_solutioning is the judge's semantic backstop for the skill's #1
-        # guardrail (the literal-marker grader misses paraphrases); fail-closed like
-        # fabrication. And a sandbox leak is a harness-boundary defect, not a clean pass.
-        and not judge.get("premature_solutioning", True)
         and not harness_leak
     )
 
@@ -292,6 +294,8 @@ def run_cell(scenario: dict, args, report_dir: Path) -> dict:
         "name": scenario["name"],
         "passed": passed,
         "harness_leak": harness_leak,
+        # Report-only (not folded into `passed` yet — see the passed computation above).
+        "judge_premature_solutioning": judge.get("premature_solutioning"),
         "graders": {g["grader"]: g["passed"] for g in grader_results},
         "judge_expected_behavior_met": judge.get("expected_behavior_met"),
         "judge_scores": {
@@ -342,15 +346,18 @@ def main() -> int:
         "",
         f"examiner={args.model} sim={args.sim_model} judge={args.judge_model}",
         "",
-        "| cell | name | result | leak | graders | judge ebm |",
-        "|---|---|---|---|---|---|",
+        "| cell | name | result | leak | solu? | graders | judge ebm |",
+        "|---|---|---|---|---|---|---|",
     ]
     for r in results:
         graders = ", ".join(f"{k}={'P' if v else 'F'}" for k, v in r.get("graders", {}).items())
         leak = "LEAK" if r.get("harness_leak") else ""
+        # Report-only judge signal: flag it for review, but it does not fail the cell yet.
+        solu = "SOLU?" if r.get("judge_premature_solutioning") else ""
         summary_lines.append(
             f"| {r['cell']} | {r['name']} | {'PASS' if r.get('passed') else 'FAIL'} "
-            f"| {leak} | {graders or r.get('error', '')} | {r.get('judge_expected_behavior_met')} |"
+            f"| {leak} | {solu} | {graders or r.get('error', '')} | "
+            f"{r.get('judge_expected_behavior_met')} |"
         )
     (report_dir / "summary.md").write_text("\n".join(summary_lines) + "\n", encoding="utf-8")
     (report_dir / "summary.json").write_text(

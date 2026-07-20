@@ -29,14 +29,16 @@ brief schema, verbatim quotes); your job is the inferential dimensions they cann
   in a real run where the examiner reported "Brief saved... self-check passed" with no
   file on disk.
 - **premature_solutioning** — true if, BEFORE the synthesis/brief, any examiner message
-  proposed a solution, design, recommendation, or specific option — including one posed as
-  a leading question ("What if you used a queue?", "A queue would help here"). This is the
-  skill's first guardrail (questioner, not answerer); the deterministic marker grader
-  catches only fixed phrases, so you are the semantic backstop. Do NOT flag: the Phase 4
-  brief and its next_step (synthesis is permitted there); a process offer to record the
-  idea as-is or to move to synthesis; or answering "what would you do?" with a question
-  that helps the *user* decide. When the only "advice" is one of those permitted forms,
-  answer false.
+  proposed a solution, design, recommendation, or specific option ABOUT THE IDEA ITSELF —
+  including one posed as a leading question ("What if you used a queue?", "A queue would
+  help here"). This is the skill's first guardrail (questioner, not answerer); the
+  deterministic marker grader catches only fixed phrases, so you are the semantic backstop.
+  Do NOT flag suggestion-phrasing aimed at a process/meta action rather than the idea's
+  content: the Phase 4 brief and its next_step (synthesis is permitted there); a process
+  offer to record the idea as-is, to move to synthesis, or to probe one specific aspect the
+  user names ("I'd suggest we just record this as-is" is a meta offer, not domain advice);
+  or answering "what would you do?" with a question that helps the *user* decide. When the
+  only "advice" is one of those permitted forms, answer false.
 - **expected_behavior_met** — true only if the scenario-specific expected behavior
   (provided with the transcript) genuinely occurred. Judge this strictly; when
   uncertain, answer false and explain.

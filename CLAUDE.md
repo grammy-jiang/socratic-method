@@ -93,8 +93,8 @@ all:
 1. `src/socratic_method/assets/idea-brief-v1.schema.json` (frontmatter contract;
    `additionalProperties: false`, so new keys REQUIRE a schema change first)
 2. `src/socratic_method/assets/SKILL.md` Phase 4 brief template
-3. `src/socratic_method/validator.py` `_REQUIRED_HEADERS` (body headers, matched by
-   `startswith`)
+3. `src/socratic_method/validator.py` `REQUIRED_HEADERS` (body headers, matched by
+   `startswith`; also imported by `evals/graders.py`)
 4. `evals/fixtures/tech-talk-series-20260704.md` (golden fixture; referenced via
    `tests/conftest.py`'s `GOLDEN` constant from test_validator/test_cli/test_graders AND
    by literal path in the CI smoke step; also embedded verbatim in

@@ -24,7 +24,7 @@ from pathlib import Path
 import jsonschema
 import yaml
 
-_REQUIRED_HEADERS = (
+REQUIRED_HEADERS = (
     "# Idea brief:",
     "## What changed under questioning",
     "## Scope",
@@ -112,7 +112,7 @@ def validate_idea_brief(brief_path: str | Path) -> list[str]:
         for err in sorted(validator.iter_errors(fm), key=lambda e: list(e.path))
     )
 
-    for header in _REQUIRED_HEADERS:
+    for header in REQUIRED_HEADERS:
         if not any(line.startswith(header) for line in body.splitlines()):
             errors.append(f"body: missing required header '{header}'")
 
