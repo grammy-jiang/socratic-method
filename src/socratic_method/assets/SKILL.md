@@ -118,10 +118,11 @@ checkpoint. In `stress` mode, weight toward counterexamples and contradiction su
 
 **Incremental capture:** whenever an answer changes the thesis or surfaces a new assumption,
 contradiction, or open question, silently update the draft brief at the output path (Phase 4
-format, `verdict: aporia` while in progress). Keep the interim brief schema-valid: `verdict:
-aporia` requires a non-empty `open_questions`, so until a real gap surfaces seed it with one
-placeholder (e.g. `"in progress — no gap identified yet"`) and replace it once a genuine
-question appears. An interrupted or abandoned session must still leave a usable partial brief.
+format). Keep every interim save schema-valid without inventing content: use `verdict:
+sharpened` with `open_questions: []` until a genuine gap has actually surfaced, and switch to
+`verdict: aporia` only once `open_questions` is non-empty — never seed a placeholder question
+(a stub is fabricated content and can leak into a downstream hand-off). An interrupted or
+abandoned session must still leave a usable partial brief.
 
 ### Phase 3 — Verdict checkpoint
 
@@ -227,9 +228,10 @@ agenda, `assumptions[status=unvalidated]` is a validation worklist.
   who consults it, what "good advice" means — before building anything; the brief informs
   scope and source selection.
 - **Chained by another skill:** another skill may *tell the user* to run `/socratic-method`
-  first when its own input is fuzzy — it cannot invoke this skill itself
-  (`disable-model-invocation: true` blocks model-initiated invocation from any context).
-  Control returns once the user runs it and the brief exists.
+  first when its own input is fuzzy — it cannot invoke this skill itself on platforms that
+  honor `disable-model-invocation` (Claude Code, Copilot VS Code/CLI); Codex enforces the
+  equivalent policy through its own `agents/openai.yaml` sidecar. Control returns once the
+  user runs it and the brief exists.
 
 ## Guardrails
 
@@ -243,9 +245,9 @@ agenda, `assumptions[status=unvalidated]` is a validation worklist.
   Steelman before you probe.
 - Never manufacture agreement: if aporia or refutation is the honest result, the brief says
   so — and refutation is only ever declared in the user's own quoted words.
-- Respect the stop signal instantly, including soft forms: "stop", "that's enough", "I'm
-  done", "let's not re-walk this" → go straight to Phase 4 with whatever was gathered. Never
-  politely push past a stop signal with more questions.
+- Respect the stop signal instantly, including soft forms: "stop", "that's enough", "wrap
+  up", "I'm done", "let's not re-walk this" → go straight to Phase 4 with whatever was
+  gathered. Never politely push past a stop signal with more questions.
 
 ## Source
 
