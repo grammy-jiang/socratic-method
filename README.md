@@ -190,20 +190,19 @@ sandbox (no harness leak).
 
 ## Development
 
-Working on this repository? [CLAUDE.md](CLAUDE.md) is the authoritative contributor guide
-(the idea-brief format is enforced in lockstep across six files, and the shipped `SKILL.md`
-must never be reformatted); [AGENTS.md](AGENTS.md) is the short version.
+Working on this repository? Read [CLAUDE.md](CLAUDE.md) first — or [AGENTS.md](AGENTS.md)
+for the short version — before any non-trivial change.
 
 ```bash
 uv sync                      # or: pip install -e . && pip install pytest
-uv run pytest                # validator negatives, installer + detection behavior, CLI smoke
+uv run pytest -q             # validator negatives, installer + detection behavior, CLI smoke
 uv run pre-commit install    # install the git hook: one tool per file type — ruff (py), syntax checks (yaml/json/toml), actionlint
 uvx pre-commit run --all-files --show-diff-on-failure   # the exact lint sweep CI runs; do this before pushing
 ```
 
-CI (`.github/workflows/ci.yml`) runs the pre-commit lint sweep, then the test suite on
-Python 3.11–3.14, and a build job that builds the sdist/wheel, checks metadata, and
-smoke-tests the CLI installed from the built wheel.
+CI (`.github/workflows/ci.yml`) runs three parallel jobs: the pre-commit lint sweep, the
+test suite on Python 3.11–3.14, and a build job that builds the sdist/wheel, checks
+metadata, and smoke-tests the CLI installed from the built wheel.
 
 ## Releasing to PyPI
 
