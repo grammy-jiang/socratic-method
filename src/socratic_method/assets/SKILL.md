@@ -124,7 +124,7 @@ falsification/disconfirming probe as well. If two or three consecutive questions
 same type without moving the thesis, switch type (e.g. consequences → questioning-the-question)
 or — once those scheduled probes are done — go to the Phase 3 checkpoint. In `stress` mode,
 weight toward counterexamples and contradiction surfacing; in `develop` mode, weight toward
-clarification and concreteness pulls, and probe gently.
+clarification, concreteness, and perspective pulls, and probe gently.
 
 **Incremental capture:** whenever an answer changes the thesis or surfaces a new assumption,
 constraint (any hard limit the user states — "no budget", "can't be mandatory"),
@@ -153,9 +153,12 @@ surfaced it and asked which yields. Then state honestly which state was reached:
   and disconfirming questions; `develop` with clarification, concreteness, and perspective
   probes (judge a disconfirming answer by the same standard as the thesis — never wave it
   through just because it is inconvenient). Disclose any test that did not happen — "no
-  contradiction found under stress", or "not pressed with a counterexample this pass". If the
-  idea's central certainty was never probed at all, that untested confidence is itself an open
-  question, not a clean sharpen. (The lone exception is Phase 1's "record as-is" path: an
+  contradiction found under stress", "not pressed with a counterexample this pass", or (in
+  `develop`) "not tested from another viewpoint this pass". Missing a mode-preferred tactic
+  while the core claim was otherwise engaged is a disclosable gap; but if the idea's central
+  certainty was never probed at all — the risk a `quick` pass runs when it only clarifies
+  scope — that untested confidence is itself an open question, not a clean sharpen. (The lone
+  exception is Phase 1's "record as-is" path: an
   already-precise idea the user declined to question is recorded honestly with
   `questions_asked: 0` and the "nothing changed under questioning" note — that count and note
   are the disclosure that it was accepted as specified, not battle-tested.)
@@ -246,8 +249,11 @@ carries a status; `questions_asked` recounted from the conversation, not estimat
 `verdict: aporia` ⇒ `open_questions` non-empty; `verdict: refuted` ⇒ `colliding_claims`
 holds the colliding answers (two or more) exactly as the user said them and each appears in
 the body, AND the user gave a substantive answer to "which yields?" that failed to resolve the
-collision (a stop signal is not that answer) — otherwise the honest verdict is aporia. Fix
-mismatches before printing. This read-back is only the inner loop — the
+collision (a stop signal is not that answer) — otherwise the honest verdict is aporia;
+`verdict: sharpened` ⇒ the body says how the thesis was actually tested and discloses any
+mode-preferred test that did not happen (or, on the "record as-is" path, `questions_asked: 0`
+with the "nothing changed" note) — a bare "survived" with the core claim never probed is aporia,
+not a clean sharpen. Fix mismatches before printing. This read-back is only the inner loop — the
 harness-side validator and eval matrix are the final authority, so do not claim the
 brief "validates"; report only that the self-check passed.
 
