@@ -24,7 +24,8 @@ _BRIEF_MARKER = "schema: idea-brief-v1"
 
 # A synthesis (Phase 3/4) message: the examiner may print the brief in chat as prose
 # rather than embedding the frontmatter, so detect any of the wrap-up signatures.
-_SYNTHESIS_RE = re.compile(r"schema: idea-brief-v1|notes/idea-briefs/|\*\*Verdict|\bVerdict:")
+# Built from _BRIEF_MARKER so the marker string has a single source.
+_SYNTHESIS_RE = re.compile(rf"{re.escape(_BRIEF_MARKER)}|notes/idea-briefs/|\*\*Verdict|\bVerdict:")
 
 _SOLUTIONING_MARKERS = (
     "i'd suggest",
@@ -172,13 +173,35 @@ def brief_valid(transcript, brief_path, scenario):
     }
 
 
-_QUOTED_SPAN_RE = re.compile(r'[""]([^""]{15,300})[""]|"([^"]{15,300})"')
+_QUOTED_SPAN_RE = re.compile(
+    r'[""]([^""]{15,300})[""]'  # curly double quotes
+    r'|"([^"]{15,300})"'  # straight double quotes
+    r"|(?<![A-Za-z0-9])'([^']{15,300})'"  # straight single quotes (not an apostrophe)
+)
 
 
 def _normalize_quote(text: str) -> str:
     """Strip markdown emphasis and collapse whitespace so an examiner quote with added
     **bold** still matches the user's plain words."""
     return re.sub(r"\s+", " ", text.replace("*", "").replace("_", "")).strip().lower()
+
+
+def _quoted_spans(text: str) -> list[str]:
+    """Normalized quoted spans in an examiner message: inline curly/straight double and
+    straight single quotes, plus Markdown blockquote lines — the rubric asks the examiner
+    to 'quote both back', which a model may render as > blockquotes, not inline quotes."""
+    spans = []
+    for groups in _QUOTED_SPAN_RE.findall(text):
+        span = next((g for g in groups if g), "")
+        if span:
+            spans.append(_normalize_quote(span))
+    for line in text.splitlines():
+        stripped = line.lstrip()
+        if stripped.startswith(">"):
+            quoted = _normalize_quote(stripped.lstrip(">").strip())
+            if len(quoted) >= 15:
+                spans.append(quoted)
+    return spans
 
 
 def refutation_mechanics(transcript, brief_path, scenario):
@@ -198,7 +221,7 @@ def refutation_mechanics(transcript, brief_path, scenario):
         if m["role"] == "user":
             user_so_far += "\n" + _normalize_quote(m["text"])
             continue
-        spans = [_normalize_quote(a or b) for a, b in _QUOTED_SPAN_RE.findall(m["text"])]
+        spans = _quoted_spans(m["text"])
         hits = {s for s in spans if s and s in user_so_far}
         if len(hits) >= 2:
             surfaced = True
@@ -253,9 +276,24 @@ def aporia_open_questions(transcript, brief_path, scenario):
     }
 
 
+def _tail_dialogue_questions(tail: str) -> int:
+    """Conversational questions in a wrap-up segment, ignoring the brief itself — its
+    frontmatter (`key:` lines), headers, list items, blockquotes, and any fenced block —
+    so a trailing 'would you like me to also…?' is caught but the brief's own open
+    questions are not."""
+    n = 0
+    for line in _strip_brief_and_fences(tail).splitlines():
+        s = line.strip()
+        if not s or s[0] in "#-*>|" or re.match(r"^[A-Za-z_][\w -]*:", s):
+            continue
+        n += s.count("?")
+    return n
+
+
 def stop_honored(transcript, brief_path, scenario):
-    """After the user's stop message, no examiner message asks another question
-    (the brief-carrying message is exempt from '?'-counting noise via fence stripping)."""
+    """After the user's stop message, no examiner message asks another question. The
+    wrap-up message is not exempted wholesale — only its synthesis segment is — so a
+    question smuggled into the verdict/brief turn (before or after the brief) is caught."""
     stop_idx = None
     for i, m in enumerate(transcript):
         if m["role"] == "user" and (
@@ -265,13 +303,21 @@ def stop_honored(transcript, brief_path, scenario):
             break
     if stop_idx is None:
         return {"grader": "stop_honored", "passed": False, "detail": "stop message never sent"}
-    violations = [
-        f"turn {m['turn']}: asked {_question_count(m['text'])} question(s) after stop"
-        for m in transcript[stop_idx + 1 :]
-        if m["role"] == "examiner"
-        and not _SYNTHESIS_RE.search(m["text"])
-        and _question_count(m["text"]) > 0
-    ]
+    violations = []
+    for m in transcript[stop_idx + 1 :]:
+        if m["role"] != "examiner":
+            continue
+        match = _SYNTHESIS_RE.search(m["text"])
+        if match:
+            # Count questions before the synthesis marker (dialogue) plus conversational
+            # questions after it, but never the brief's own content.
+            q = _question_count(m["text"][: match.start()]) + _tail_dialogue_questions(
+                m["text"][match.start() :]
+            )
+        else:
+            q = _question_count(m["text"])
+        if q > 0:
+            violations.append(f"turn {m['turn']}: asked {q} question(s) after stop")
     return {
         "grader": "stop_honored",
         "passed": not violations,
