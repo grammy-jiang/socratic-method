@@ -70,7 +70,10 @@ the *thesis under examination*; update it whenever an answer changes it.
 clear scope, an owner, measurable success criteria, no open questions — or the user signals
 they don't want questioning, this is the "Not for" case: say so and stop rather than
 manufacture doubts. Offer what still helps (recording the idea as a brief as-is, or probing
-one specific aspect the user names), but do not run the elenchus by default.
+one specific aspect the user names), but do not run the elenchus by default. If the user
+accepts "record as-is", still emit the Phase 4 brief with `verdict: sharpened`,
+`questions_asked: 0`, and `types_used: []`, noting under "What changed under questioning"
+that nothing did.
 
 ### Phase 2 — Elenchus (the questioning rounds)
 
@@ -79,7 +82,9 @@ the answer: the adaptivity (each question chosen from the last answer) is where 
 comes from. At `quick`, group 2–3 related questions per turn as plain prose — never as
 multiple-choice chips, which would collapse the very ambiguity being examined. At any depth,
 never ask a checklist (a bulleted or numbered list of questions — a quick-mode group must
-read as one connected paragraph) and never answer your own question.
+read as one connected paragraph) and never answer your own question. Elenchus questions are
+open-ended prose at every depth: `AskUserQuestion`'s structured multiple-choice form is
+reserved for the Setup turn, never a Phase 2 probe — pre-baked options anchor the answer.
 
 Choose each question for maximum information gain against the *current* thesis, drawing from
 the six classic Socratic question types:
@@ -113,8 +118,10 @@ checkpoint. In `stress` mode, weight toward counterexamples and contradiction su
 
 **Incremental capture:** whenever an answer changes the thesis or surfaces a new assumption,
 contradiction, or open question, silently update the draft brief at the output path (Phase 4
-format, `verdict: aporia` while in progress). An interrupted or abandoned session must still
-leave a usable partial brief.
+format, `verdict: aporia` while in progress). Keep the interim brief schema-valid: `verdict:
+aporia` requires a non-empty `open_questions`, so until a real gap surfaces seed it with one
+placeholder (e.g. `"in progress — no gap identified yet"`) and replace it once a genuine
+question appears. An interrupted or abandoned session must still leave a usable partial brief.
 
 ### Phase 3 — Verdict checkpoint
 
@@ -185,8 +192,9 @@ user-supplied path instead). Derive the slug from the idea plus the date
 (`<idea-slug>-YYYYMMDD`, lowercase letters/digits/hyphens only — never path characters from
 free-text input); if the file already exists, read it first and overwrite only if it
 is an earlier draft of this same dialogue — otherwise pick a suffixed name. Never write into
-areas owned by generators or other tooling (for example generated-artifact directories such
-as `.claude/agents/generated/`). Print the brief in chat as well.
+areas owned by generators or other tooling (for example build outputs or generated-artifact
+directories such as `dist/`, `.next/`, or a coding agent's own generated-adapter folder).
+Print the brief in chat as well.
 
 **Self-check before presenting:** after writing the file, `Read` it back from disk and
 check what is actually there — never self-check from memory, and never say "saved" for a
@@ -218,8 +226,10 @@ agenda, `assumptions[status=unvalidated]` is a validation worklist.
 - **Before authoring an agent, skill, or subagent:** question the idea — domain, sources,
   who consults it, what "good advice" means — before building anything; the brief informs
   scope and source selection.
-- **Chained by another skill:** any skill may invoke this one first when its own input is
-  fuzzy; it returns control once the brief exists.
+- **Chained by another skill:** another skill may *tell the user* to run `/socratic-method`
+  first when its own input is fuzzy — it cannot invoke this skill itself
+  (`disable-model-invocation: true` blocks model-initiated invocation from any context).
+  Control returns once the user runs it and the brief exists.
 
 ## Guardrails
 
