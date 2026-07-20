@@ -136,9 +136,10 @@ python evals/run_eval.py                # full matrix — ~30-60 headless `claud
   `expected:`. Every grader named must exist in `graders.GRADERS`.
 - Reports: `evals/reports/<ts>/**/workdir/` is gitignored; the transcripts, grader/judge
   JSON, and summaries are committable on purpose — they are the evidence trail.
-- Leak sweep footgun: when a cell ends with no brief inside its sandbox, the newest fresh
-  `notes/idea-briefs/*.md` at repo root gets moved into the report dir as
-  `brief-leaked.md`.
+- Leak sweep footgun: when a cell ends with no brief inside its sandbox, a fresh
+  `notes/idea-briefs/*.md` at repo root correlated to the cell is **copied** (never moved —
+  the original stays in your `notes/`) into the report dir as `brief-leaked.md`, which is
+  gitignored so a private brief can't be committed by accident.
 
 ## Versioning and releases
 

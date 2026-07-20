@@ -205,7 +205,14 @@ def _find_leaked_brief(run_started: float, scenario: dict) -> Path | None:
     leak_dir = REPO_ROOT / "notes" / "idea-briefs"
     if not leak_dir.is_dir():
         return None
-    fresh = [p for p in leak_dir.glob("*.md") if p.stat().st_mtime >= run_started]
+
+    def _fresh(p: Path) -> bool:
+        try:
+            return p.stat().st_mtime >= run_started
+        except OSError:  # file vanished between glob and stat — treat as not-fresh
+            return False
+
+    fresh = [p for p in leak_dir.glob("*.md") if _fresh(p)]
     if not fresh:
         return None
     # Correlate on the DISTINCTIVE tokens of the invocation only: drop the flags (the
@@ -305,7 +312,13 @@ def run_cell(scenario: dict, args, report_dir: Path) -> dict:
         if leaked is not None:
             harness_leak = True
             print(f"  [{cell}] HARNESS LEAK: brief written outside sandbox: {leaked}")
-            brief_path = _capture_leaked_brief(leaked, cell_dir / "brief-leaked.md")
+            try:
+                brief_path = _capture_leaked_brief(leaked, cell_dir / "brief-leaked.md")
+            except OSError as e:
+                # The source can vanish between detection and copy; a bare OSError here would
+                # escape main()'s per-cell handler and abort the whole remaining matrix.
+                print(f"  [{cell}] leak capture failed ({e}); continuing")
+                brief_path = None
     grader_results = run_graders(transcript, brief_path, scenario)
 
     judge_prompt = JUDGE_PROMPT_TMPL.format(

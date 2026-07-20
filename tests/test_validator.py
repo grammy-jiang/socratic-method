@@ -169,6 +169,21 @@ def test_deeply_nested_yaml_reported_not_raised(tmp_path):
     assert any("nested too deeply" in e for e in errors), errors
 
 
+def test_yaml_aliases_are_rejected(tmp_path):
+    # Aliases have no legitimate use in a brief and are a DoS vector: a nested-anchor graph
+    # stays cheap at parse time (PyYAML shares references) but detonates downstream in
+    # jsonschema's repr-based error messages, under the byte cap. Refuse them at the loader —
+    # returns an error string, never expands. (Key on the exact rejection message, not a bare
+    # "alias" substring, which a filename slug or schema message could satisfy on its own;
+    # fails safe, so it can't hang the suite if the guard regresses.)
+    p = tmp_path / "brief-20260704.md"
+    p.write_text(
+        "---\nschema: idea-brief-v1\nidea: &x foo\ndate: *x\n---\n# body\n", encoding="utf-8"
+    )
+    errors = validate_idea_brief(p)
+    assert any("aliases/anchors are not allowed" in e for e in errors), errors
+
+
 def test_title_header_prefix_is_intentional(tmp_path):
     # The "# Idea brief:" header is matched by prefix on purpose (the title carries a
     # free-text name suffix). Changing the suffix must still validate — this pins WHY

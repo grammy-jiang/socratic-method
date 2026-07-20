@@ -66,14 +66,38 @@ def split_frontmatter(text: str) -> tuple[str | None, str]:
     return parts[0].removeprefix("---").strip("\n"), parts[1]
 
 
+class _NoAliasSafeLoader(yaml.SafeLoader):
+    """SafeLoader that refuses YAML anchors/aliases.
+
+    A brief never legitimately needs them, and an alias graph is a denial-of-service vector:
+    PyYAML shares references at parse time (so the parse itself stays cheap), but downstream
+    ``jsonschema`` error messages embed ``repr(instance)``, which re-materializes every logical
+    occurrence of a shared node — a few KB of nested anchors expands exponentially there,
+    under any byte cap. Refusing aliases at compose time closes that at the root, with no
+    effect on any real brief.
+    """
+
+    def compose_node(self, parent, index):
+        if self.check_event(yaml.events.AliasEvent):
+            event = self.get_event()
+            raise yaml.constructor.ConstructorError(
+                None,
+                None,
+                "YAML aliases/anchors are not allowed in an idea brief",
+                event.start_mark,
+            )
+        return super().compose_node(parent, index)
+
+
 def parse_frontmatter_yaml(raw_fm: str) -> dict | None:
     """Parse a frontmatter YAML block to a mapping, or None if it is not one.
 
-    Raises ``yaml.YAMLError`` on malformed YAML (callers decide how to report it), and
-    normalizes a ``date:`` that YAML auto-parsed into a ``datetime.date`` back to an ISO
-    string — so the validator and the eval graders parse frontmatter one identical way.
+    Raises ``yaml.YAMLError`` on malformed YAML — including a refused anchor/alias (callers
+    decide how to report it) — and normalizes a ``date:`` that YAML auto-parsed into a
+    ``datetime.date`` back to an ISO string, so the validator and the eval graders parse
+    frontmatter one identical way.
     """
-    fm = yaml.safe_load(raw_fm)
+    fm = yaml.load(raw_fm, Loader=_NoAliasSafeLoader)  # SafeLoader subclass — safe_load-equivalent
     if not isinstance(fm, dict):
         return None
     if isinstance(fm.get("date"), datetime.date):
@@ -113,7 +137,10 @@ def validate_idea_brief(brief_path: str | Path) -> list[str]:
         # Deeply nested YAML (thousands of open brackets) overflows the pure-Python
         # parser's recursion before it builds a value — report, never crash the CLI.
         return ["Frontmatter YAML parse error: structure nested too deeply"]
-    except MemoryError:  # best-effort: an alias-expansion bomb slipping under the byte cap
+    except MemoryError:
+        # Best-effort: a very wide (non-aliased) structure. Aliases — the classic bomb — are
+        # already refused at the loader above; and the OS OOM-killer may fire before CPython's
+        # allocator raises, so this bounds the crash mode, not peak memory.
         return ["Frontmatter YAML parse error: structure expands too large"]
     if fm is None:
         return ["Frontmatter is not a mapping"]
@@ -123,9 +150,16 @@ def validate_idea_brief(brief_path: str | Path) -> list[str]:
     except (OSError, json.JSONDecodeError) as e:
         return [f"Schema load error: {e}"]
     validator = jsonschema.Draft202012Validator(schema)
+    try:
+        schema_errors = sorted(validator.iter_errors(fm), key=lambda e: list(e.path))
+    except (RecursionError, MemoryError):
+        # Defense-in-depth: the no-alias loader already blocks the known amplification vector
+        # (jsonschema error reprs re-materializing an alias DAG); this catches any other
+        # pathological structure that overflows the validator instead of crashing the CLI.
+        return ["frontmatter: structure too complex to validate"]
     errors.extend(
         f"frontmatter{'.' + '.'.join(str(p) for p in err.path) if err.path else ''}: {err.message}"
-        for err in sorted(validator.iter_errors(fm), key=lambda e: list(e.path))
+        for err in schema_errors
     )
 
     for header in REQUIRED_HEADERS:
