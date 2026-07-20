@@ -36,6 +36,11 @@ REQUIRED_HEADERS = (
 
 _FILENAME_RE = re.compile(r"^(?P<slug>[a-z0-9][a-z0-9-]*)-(?P<date>\d{8})\.md$")
 
+# A real brief is a few KB. Cap the read at ~100x that so a pathological input (a giant
+# blob, or a deeply nested / alias-expanded YAML "bomb") can't exhaust memory in the CLI
+# or in the eval harness, which runs this validator on model-written briefs.
+_MAX_BRIEF_BYTES = 1 << 20  # 1 MiB
+
 
 def load_schema() -> dict:
     """Load the packaged idea-brief-v1 JSON schema."""
@@ -82,10 +87,15 @@ def validate_idea_brief(brief_path: str | Path) -> list[str]:
     errors: list[str] = []
 
     try:
-        # utf-8-sig transparently strips a leading BOM (a no-op otherwise), and
-        # UnicodeDecodeError (a ValueError, NOT an OSError) must be caught too, or a
-        # non-UTF-8 file crashes the CLI instead of returning the usual error string.
-        text = path.read_text(encoding="utf-8-sig")
+        # Bounded read (read one byte past the cap so an over-limit file is detectable
+        # without pulling the whole thing into memory). utf-8-sig transparently strips a
+        # leading BOM (a no-op otherwise); a decode failure (UnicodeDecodeError is a
+        # ValueError, NOT an OSError) must degrade to the usual Read-error string, not crash.
+        with path.open("rb") as fh:
+            raw = fh.read(_MAX_BRIEF_BYTES + 1)
+        if len(raw) > _MAX_BRIEF_BYTES:
+            return [f"Read error: file exceeds {_MAX_BRIEF_BYTES}-byte limit"]
+        text = raw.decode("utf-8-sig")
     except (OSError, UnicodeDecodeError) as e:
         return [f"Read error: {e}"]
 
@@ -99,6 +109,12 @@ def validate_idea_brief(brief_path: str | Path) -> list[str]:
         fm = parse_frontmatter_yaml(raw_fm)
     except yaml.YAMLError as e:
         return [f"Frontmatter YAML parse error: {e}"]
+    except RecursionError:
+        # Deeply nested YAML (thousands of open brackets) overflows the pure-Python
+        # parser's recursion before it builds a value — report, never crash the CLI.
+        return ["Frontmatter YAML parse error: structure nested too deeply"]
+    except MemoryError:  # best-effort: an alias-expansion bomb slipping under the byte cap
+        return ["Frontmatter YAML parse error: structure expands too large"]
     if fm is None:
         return ["Frontmatter is not a mapping"]
 

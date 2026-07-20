@@ -69,3 +69,40 @@ def test_find_leaked_brief_ignores_unrelated_file(tmp_path, monkeypatch):
 def test_find_leaked_brief_none_when_dir_absent(tmp_path, monkeypatch):
     monkeypatch.setattr(run_eval, "REPO_ROOT", tmp_path)
     assert run_eval._find_leaked_brief(0.0, {"invocation": "x"}) is None
+
+
+def test_find_leaked_brief_stopword_only_overlap_is_not_correlated(tmp_path, monkeypatch):
+    # A brief that shares only a generic word the invocation happens to contain ("idea")
+    # must NOT be tied to this cell — the pre-tightening any-token match false-positived
+    # on it. "startup" is the distinctive token, and it is absent from the stray file.
+    monkeypatch.setattr(run_eval, "REPO_ROOT", tmp_path)
+    leak_dir = tmp_path / "notes" / "idea-briefs"
+    leak_dir.mkdir(parents=True)
+    (leak_dir / "journal-20260101.md").write_text("random idea journal", encoding="utf-8")
+    scenario = {"invocation": "/socratic-method my startup idea --mode stress"}
+    assert run_eval._find_leaked_brief(0.0, scenario) is None
+
+
+def test_find_leaked_brief_skips_non_utf8_file(tmp_path, monkeypatch):
+    # A non-UTF-8 file in notes/ must not crash the sweep (UnicodeDecodeError is not an
+    # OSError); it simply can't be correlated.
+    monkeypatch.setattr(run_eval, "REPO_ROOT", tmp_path)
+    leak_dir = tmp_path / "notes" / "idea-briefs"
+    leak_dir.mkdir(parents=True)
+    (leak_dir / "binary-20260101.md").write_bytes(b"\xff\xfe weekly newsletter")
+    scenario = {"invocation": "/socratic-method a weekly newsletter for the team"}
+    assert run_eval._find_leaked_brief(0.0, scenario) is None
+
+
+def test_capture_leaked_brief_copies_and_preserves_original(tmp_path):
+    # The leaked brief lives in the user's gitignored notes/; capturing it for the report
+    # must COPY (leave the original in place), never move — a coincidental correlation
+    # must not delete a real brief the user was writing.
+    src = tmp_path / "brief-20260101.md"
+    src.write_text("real user brief", encoding="utf-8")
+    dest = tmp_path / "report" / "brief-leaked.md"
+    dest.parent.mkdir()
+    out = run_eval._capture_leaked_brief(src, dest)
+    assert out == dest
+    assert dest.read_text(encoding="utf-8") == "real user brief"
+    assert src.exists() and src.read_text(encoding="utf-8") == "real user brief"

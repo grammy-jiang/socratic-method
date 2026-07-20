@@ -6,7 +6,11 @@ import re
 import pytest
 from conftest import GOLDEN
 
-from socratic_method.validator import split_frontmatter, validate_idea_brief
+from socratic_method.validator import (
+    _MAX_BRIEF_BYTES,
+    split_frontmatter,
+    validate_idea_brief,
+)
 
 MUTATIONS = {
     "refuted-without-colliding-claims": (
@@ -126,6 +130,24 @@ def test_unterminated_frontmatter_reported(tmp_path):
     assert validate_idea_brief(p) == [
         "Unterminated YAML frontmatter block (opening --- found, no closing --- found)"
     ]
+
+
+def test_oversize_file_returns_read_error(tmp_path):
+    # A pathological over-cap brief must be rejected by the size guard, never read whole
+    # into memory (defends the CLI and the eval harness against a giant blob).
+    p = tmp_path / "huge-20260704.md"
+    p.write_bytes(b"-" * (_MAX_BRIEF_BYTES + 1))
+    assert validate_idea_brief(p) == [f"Read error: file exceeds {_MAX_BRIEF_BYTES}-byte limit"]
+
+
+def test_deeply_nested_yaml_reported_not_raised(tmp_path):
+    # Deeply nested flow YAML overflows the pure-Python parser's recursion; it must degrade
+    # to an error string, never let a RecursionError escape the validator.
+    depth = 20000
+    p = tmp_path / "nested-20260704.md"
+    p.write_text("---\na: " + "[" * depth + "]" * depth + "\n---\n# body\n", encoding="utf-8")
+    errors = validate_idea_brief(p)  # must return, never raise
+    assert any("nested too deeply" in e for e in errors), errors
 
 
 def test_title_header_prefix_is_intentional(tmp_path):
