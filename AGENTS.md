@@ -5,9 +5,10 @@ Guide for AI coding agents working on this repository (Codex, Copilot, and other
 **The authoritative, detailed agent guide is [CLAUDE.md](CLAUDE.md) — read it before any
 non-trivial change.** The essentials:
 
-- `src/socratic_method/assets/SKILL.md` is the shipped product. Editing it invalidates
-  every existing install's content hash and is instantly picked up by the eval harness.
-  Never let a formatter touch it.
+- `src/socratic_method/assets/SKILL.md` is the shipped product. Editing it flips
+  `--copy` installs to `partial-or-modified` (symlinked installs, the default, pick the
+  edit up immediately and keep reporting `up-to-date`), and is instantly picked up by the
+  eval harness. Never let a formatter touch it.
 - The idea-brief format is enforced in lockstep across the JSON schema, the SKILL.md
   brief template, `validator.py`, the golden fixture in `evals/fixtures/`, the graders,
   and the mutation tests — change all of them together or none.

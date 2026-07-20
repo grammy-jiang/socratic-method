@@ -51,9 +51,12 @@ Special properties to know before acting:
   locally modified install without `--force`. `remove` (alias `uninstall`) reverts
   what setup did — careful: with no targets it removes the skill for ALL platforms,
   including locally modified copies.
-- **Never hand-edit an installed copy** (e.g. `.claude/skills/socratic-method/`) — the
-  content hash flips the install to `partial-or-modified` and blocks future `setup`
-  runs. The canonical source is `src/socratic_method/assets/` in this repo.
+- **Never hand-edit an installed copy** (e.g. `.claude/skills/socratic-method/`). A
+  default install is a *symlink*, so an edit writes straight through to the packaged
+  asset — corrupting the source for every install while the install still reports
+  `up-to-date`; a `--copy` install instead flips to `partial-or-modified` and blocks
+  future `setup` runs. Either way, edit the canonical source at
+  `src/socratic_method/assets/` in this repo, never the installed path.
 - Working on this repository itself? Read [CLAUDE.md](CLAUDE.md) (authoritative agent
   guide) or [AGENTS.md](AGENTS.md) (summary) first: the idea-brief format is enforced
   in lockstep across six files, and the shipped `SKILL.md` must never be reformatted.
@@ -145,7 +148,10 @@ zero context tokens until you call it. Invoke it explicitly:
 $socratic-method <idea> ...                                                     # Codex ($ mention)
 ```
 
-The session ends with the brief saved to `notes/idea-briefs/<slug>-YYYYMMDD.md`.
+The session ends with the brief saved to `notes/idea-briefs/<slug>-YYYYMMDD.md`. A full
+worked session — steelman restatement, contradiction-surfacing by verbatim quotation, a
+refutation-vs-aporia contrast, and the resulting `idea-brief-v1` file — is in
+[references/example-session.md](src/socratic_method/assets/references/example-session.md).
 
 This is enforced by `disable-model-invocation: true` in the skill frontmatter (Claude
 Code; Copilot VS Code agent mode and CLI) and by the `agents/openai.yaml` sidecar with
@@ -184,14 +190,20 @@ sandbox (no harness leak).
 
 ## Development
 
+Working on this repository? [CLAUDE.md](CLAUDE.md) is the authoritative contributor guide
+(the idea-brief format is enforced in lockstep across six files, and the shipped `SKILL.md`
+must never be reformatted); [AGENTS.md](AGENTS.md) is the short version.
+
 ```bash
 uv sync                      # or: pip install -e . && pip install pytest
 uv run pytest                # validator negatives, installer + detection behavior, CLI smoke
-uv run pre-commit install    # one tool per file type: ruff (py), syntax checks (yaml/json/toml), actionlint
+uv run pre-commit install    # install the git hook: one tool per file type — ruff (py), syntax checks (yaml/json/toml), actionlint
+uvx pre-commit run --all-files --show-diff-on-failure   # the exact lint sweep CI runs; do this before pushing
 ```
 
-CI (`.github/workflows/ci.yml`) runs the test suite on Python 3.11–3.14, builds the
-sdist/wheel, checks metadata, and smoke-tests the CLI installed from the built wheel.
+CI (`.github/workflows/ci.yml`) runs the pre-commit lint sweep, then the test suite on
+Python 3.11–3.14, and a build job that builds the sdist/wheel, checks metadata, and
+smoke-tests the CLI installed from the built wheel.
 
 ## Releasing to PyPI
 
@@ -203,8 +215,10 @@ project `socratic-method`, owner `grammy-jiang`, repository `socratic-method`, w
 1. Bump `__version__` in `src/socratic_method/__init__.py`.
 2. Push an annotated tag `vX.Y.Z` on master (must match `__version__` — the workflow
    verifies): `git tag -a vX.Y.Z -m "..." && git push origin vX.Y.Z`.
-3. `release.yml` builds and checks the distributions, creates the GitHub Release with
-   the wheel and sdist attached, and publishes to PyPI; the package appears at
+3. `release.yml` builds and checks the distributions, publishes to PyPI via Trusted
+   Publishing, then creates the GitHub Release with the wheel and sdist attached. PyPI
+   deliberately goes **first** and gates the Release — PyPI is immutable, so a failed
+   publish never leaves a half-released state. The package then appears at
    `pypi.org/project/socratic-method/`, after which `pip install socratic-method` works.
 
 From an environment that cannot push tags (e.g. a Claude Code remote session, whose git

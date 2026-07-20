@@ -5,9 +5,8 @@ Pip-installable package `socratic-method`: a Socratic questioning skill for codi
 idea-brief validator, and a behavioral eval harness. The skill was authored and hardened
 in [subagent-factory](https://github.com/grammy-jiang/subagent-factory) but **lives
 standalone here** — none of that repo's machinery (provenance ledgers, CHANGELOG-per-bump,
-`tools/subagent_factory/`, `.claude/agents/generated/`) applies in this repo. The schema
-file's description still mentions `tools/subagent_factory/validate_idea_brief.py`; that is
-a stale cross-reference — the validator here is `src/socratic_method/validator.py`.
+`tools/subagent_factory/`, `.claude/agents/generated/`) applies in this repo. The brief
+validator here is `src/socratic_method/validator.py`.
 
 **Core maintenance rule** (inherited from the skill's history): a behavioral failure is
 not fixed until something durable changes — a grader, a scenario, or a rail in
@@ -20,7 +19,7 @@ src/socratic_method/           the package: cli.py, installer.py, validator.py
 src/socratic_method/assets/    THE PRODUCT: SKILL.md, example-session, idea-brief schema
 evals/                         6-cell behavioral eval harness (run_eval.py, graders, rubric)
 evals/fixtures/                golden valid brief (load-bearing for tests + CI smoke)
-tests/                         pytest suite (validator mutations, installer, detection, CLI)
+tests/                         pytest suite (validator mutations, installer, detection, CLI, asset invocation-policy, eval graders)
 .claude/skills/                maintainer skills for developing THIS repo (e.g. /release)
 notes/                         gitignored; where the skill writes real briefs
 ```
@@ -151,9 +150,11 @@ hard-fail on mismatch.
 
 Normal release: bump `__version__`, then push an annotated tag from an environment that
 can push tags — `git tag -a vX.Y.Z -m "..." && git push origin vX.Y.Z`. `release.yml`
-builds, attaches the wheel+sdist to a GitHub Release, and publishes to PyPI via Trusted
-Publishing (bound to workflow file `release.yml` + environment `pypi` — renaming either
-breaks publishing until the PyPI publisher config is updated).
+builds, publishes to PyPI via Trusted Publishing, then attaches the wheel+sdist to a
+GitHub Release — PyPI goes **first** and gates the Release (it is immutable, so a failed
+publish must not leave a half-released state). Publishing is bound to workflow file
+`release.yml` + environment `pypi` — renaming either breaks it until the PyPI publisher
+config is updated.
 
 From a Claude Code remote session the git proxy rejects `refs/tags` pushes — use the
 dispatch fallback (details in `.claude/skills/release/SKILL.md`, invoke `/release`):
