@@ -159,14 +159,14 @@ def skill_dir(platform: Platform, scope: str, root: Path, home: Path) -> Path:
 def file_state(target: Path, rel: str) -> str:
     """One managed file's state: 'missing' | 'up-to-date' | 'differs'."""
     dst = target / rel
-    if not dst.is_file():
-        return "missing"
     try:
+        if not dst.is_file():
+            return "missing"
         current = dst.read_bytes()
     except OSError:
-        # An existing but unreadable file (permissions revoked, mount quirk): treat as
-        # differing so status() can report it and install() routes through the --force
-        # path — never an uncaught OSError that crashes every caller, status included.
+        # is_file() and read_bytes() both propagate a PermissionError (e.g. an unreadable
+        # parent dir). Treat that as differing so status() can report it and install()
+        # routes through --force — never an uncaught OSError that crashes every caller.
         return "differs"
     return "up-to-date" if _digest(current) == _digest(packaged_content(rel)) else "differs"
 
@@ -185,7 +185,12 @@ def has_leftovers(target: Path) -> bool:
     """Any managed path present as a symlink (including a dangling one, which reads as
     'missing' to file_state) — i.e. is there anything on disk for uninstall to sweep,
     independent of whether it is a valid content install."""
-    return any((target / rel).is_symlink() for rel in MANAGED_FILES)
+    try:
+        return any((target / rel).is_symlink() for rel in MANAGED_FILES)
+    except OSError:
+        # Can't tell (e.g. an unreadable parent dir): assume cleanup may be needed;
+        # uninstall()'s own unlink guard surfaces any real failure as "blocked".
+        return True
 
 
 def _copilot_covered_by_claude(root: Path, home: Path) -> Path | None:
@@ -229,6 +234,11 @@ class Action:
     outcome: str  # one of OUTCOMES
     detail: str = ""
 
+    def __post_init__(self) -> None:
+        # OUTCOMES is the single source of truth; catch a new/renamed outcome that forgot
+        # to update it (which would otherwise render as "?" in cli with no test failing).
+        assert self.outcome in OUTCOMES, f"outcome {self.outcome!r} not in OUTCOMES"
+
 
 def install(
     platform_key: str,
@@ -242,9 +252,19 @@ def install(
 ) -> Action:
     platform = _resolve_platform(platform_key)
     target = skill_dir(platform, scope, root, home)
+    state = install_state(target)
 
-    # Copilot dedupe: a project-scope Claude install in the same root already covers it.
-    if platform_key == "copilot" and scope == "project" and not force:
+    # Copilot dedupe: a project-scope Claude install in the same root already covers it —
+    # but ONLY when Copilot itself is absent (no install, no dangling leftovers). An
+    # already-installed or locally-modified Copilot must report its own state
+    # (up-to-date / blocked), matching status(), not be masked as "skipped".
+    if (
+        platform_key == "copilot"
+        and scope == "project"
+        and not force
+        and state == "not-installed"
+        and not has_leftovers(target)
+    ):
         covered_by = _copilot_covered_by_claude(root, home)
         if covered_by is not None:
             return Action(
@@ -256,7 +276,6 @@ def install(
                 "(use --force to install to .github/skills anyway)",
             )
 
-    state = install_state(target)
     if state == "up-to-date" and not force:
         # force still rewrites an up-to-date install: it is the way to switch an
         # install between symlink and copy mode (same content, different mechanism).
@@ -365,10 +384,15 @@ def status(root: Path, home: Path) -> list[Action]:
                 continue
             target = skill_dir(platform, scope, root, home)
             state = install_state(target)
-            # Reflect install()'s Copilot dedupe: a not-installed project Copilot that a
-            # Claude install already covers is "skipped", not "not-installed" — so status
-            # (the read side) agrees with what setup (the write side) would report.
-            if key == "copilot" and scope == "project" and state == "not-installed":
+            # Reflect install()'s Copilot dedupe: a not-installed project Copilot (with no
+            # dangling leftovers) that a Claude install already covers is "skipped", not
+            # "not-installed" — so status (read side) agrees with what setup would report.
+            if (
+                key == "copilot"
+                and scope == "project"
+                and state == "not-installed"
+                and not has_leftovers(target)
+            ):
                 covered_by = _copilot_covered_by_claude(root, home)
                 if covered_by is not None:
                     out.append(Action(key, scope, target, "skipped", f"covered by {covered_by}"))

@@ -8,6 +8,7 @@ from socratic_method.installer import (
     PLATFORMS,
     asset_path,
     file_state,
+    has_leftovers,
     install,
     install_state,
     packaged_content,
@@ -301,3 +302,35 @@ def test_unknown_platform_raises_valueerror(roots):
         install("cursor", "project", root, home)
     with pytest.raises(ValueError, match="unknown platform"):
         uninstall("cursor", "project", root, home)
+
+
+def test_copilot_installed_reports_up_to_date_not_skipped(roots):
+    # Regression: the dedupe used to fire before checking Copilot's OWN state, masking an
+    # already-installed Copilot as "skipped" (disagreeing with status()'s "up-to-date").
+    root, home = roots
+    install("copilot", "project", root, home)  # copilot itself installed first
+    install("claude", "project", root, home)  # claude now also covers it
+    assert install("copilot", "project", root, home).outcome == "up-to-date"
+
+
+def test_copilot_modified_reports_blocked_not_skipped(roots):
+    root, home = roots
+    install("copilot", "project", root, home)
+    install("claude", "project", root, home)
+    cop = skill_dir(PLATFORMS["copilot"], "project", root, home)
+    (cop / "SKILL.md").unlink()
+    (cop / "SKILL.md").write_text("locally edited")
+    assert install("copilot", "project", root, home).outcome == "blocked"
+
+
+def test_has_leftovers_true_on_oserror(roots, monkeypatch):
+    # An unreadable parent dir (is_symlink raises PermissionError) must not crash uninstall;
+    # has_leftovers conservatively returns True so the unlink guard can surface the failure.
+    root, home = roots
+    target = skill_dir(PLATFORMS["claude"], "project", root, home)
+
+    def boom(self):
+        raise PermissionError("unreadable parent")
+
+    monkeypatch.setattr("pathlib.Path.is_symlink", boom)
+    assert has_leftovers(target) is True
