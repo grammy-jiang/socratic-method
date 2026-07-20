@@ -270,11 +270,14 @@ def run_cell(scenario: dict, args, report_dir: Path) -> dict:
         all(g["passed"] for g in grader_results)
         and judge.get("expected_behavior_met", False)
         and not judge.get("fabrication", True)
+        # premature_solutioning is the judge's semantic backstop for the skill's #1
+        # guardrail (the literal-marker grader misses paraphrases); fail-closed like
+        # fabrication. And a sandbox leak is a harness-boundary defect, not a clean pass.
+        and not judge.get("premature_solutioning", True)
+        and not harness_leak
     )
 
-    (cell_dir / "transcript.json").write_text(
-        json.dumps(transcript, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
+    _persist_transcript()
     (cell_dir / "graders.json").write_text(
         json.dumps(grader_results, indent=2, ensure_ascii=False), encoding="utf-8"
     )
