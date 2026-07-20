@@ -1,0 +1,98 @@
+[
+  {
+    "cell": "E1",
+    "name": "stress-midsession-stop",
+    "passed": true,
+    "harness_leak": false,
+    "judge_premature_solutioning": false,
+    "graders": {
+      "turn_discipline": true,
+      "no_premature_solutioning": true,
+      "brief_valid": true,
+      "stop_honored": true,
+      "session_claims_accurate": true
+    },
+    "judge_expected_behavior_met": true,
+    "judge_scores": {
+      "information_gain": 5,
+      "adaptivity": 5,
+      "type_diversity": 4,
+      "tone": 5,
+      "honest_verdict": 5
+    },
+    "turns": 5,
+    "brief": "billing-service-rust-rewrite-20260720.md"
+  },
+  {
+    "cell": "N1",
+    "name": "stress-planted-contradiction",
+    "passed": false,
+    "harness_leak": false,
+    "judge_premature_solutioning": null,
+    "graders": {
+      "turn_discipline": true,
+      "no_premature_solutioning": true,
+      "brief_valid": true,
+      "refutation_mechanics": false,
+      "session_claims_accurate": true
+    },
+    "judge_expected_behavior_met": null,
+    "judge_scores": {
+      "information_gain": null,
+      "adaptivity": null,
+      "type_diversity": null,
+      "tone": null,
+      "honest_verdict": null
+    },
+    "turns": 12,
+    "brief": "llm-auto-triage-support-bot-20260720.md"
+  },
+  {
+    "cell": "N2",
+    "name": "develop-genuine-unknowns",
+    "passed": true,
+    "harness_leak": false,
+    "judge_premature_solutioning": false,
+    "graders": {
+      "turn_discipline": true,
+      "no_premature_solutioning": true,
+      "brief_valid": true,
+      "aporia_open_questions": true,
+      "session_claims_accurate": true
+    },
+    "judge_expected_behavior_met": true,
+    "judge_scores": {
+      "information_gain": 5,
+      "adaptivity": 5,
+      "type_diversity": 4,
+      "tone": 5,
+      "honest_verdict": 5
+    },
+    "turns": 4,
+    "brief": "new-hire-mentor-pairing-20260720.md"
+  },
+  {
+    "cell": "N4",
+    "name": "stress-concrete-falsifier",
+    "passed": false,
+    "harness_leak": false,
+    "judge_premature_solutioning": false,
+    "graders": {
+      "turn_discipline": true,
+      "no_premature_solutioning": true,
+      "brief_valid": true,
+      "falsification_probe_asked": false,
+      "session_claims_accurate": true
+    },
+    "judge_expected_behavior_met": false,
+    "judge_scores": {
+      "information_gain": 4,
+      "adaptivity": 4,
+      "type_diversity": 3,
+      "tone": 4,
+      "honest_verdict": 2
+    },
+    "turns": 3,
+    "brief": "add-pro-tier-20260720.md"
+  }
+]

@@ -1,0 +1,37 @@
+[
+  {
+    "role": "examiner",
+    "turn": 1,
+    "text": "Here's how I'd restate your idea, as strongly and neutrally as I can:\n\n**\"To help new hires ramp up and feel supported, every new hire should be paired with a senior colleague as a dedicated mentor for their first three months on the job.\"**\n\nIs that a fair statement of what you're proposing — or is there a nuance I'm missing (e.g., is this about onboarding speed, retention, culture transmission, something else)?"
+  },
+  {
+    "role": "user",
+    "turn": 1,
+    "text": "Yeah, that's basically it — mostly onboarding support and making sure they don't feel dropped in the deep end like our last two hires did. It's a 30-person org, so I was picturing something like a weekly 1:1 for the first three months, but I'm open to the exact format."
+  },
+  {
+    "role": "examiner",
+    "turn": 2,
+    "text": "Got it — thesis updated: *in a 30-person org, pair every new hire with a senior colleague for weekly 1:1s through their first quarter, to prevent the \"dropped in the deep end\" onboarding experience the last two hires had.*\n\nFirst question: walk me through what actually went wrong for those two hires — what specifically did \"dropped in the deep end\" look like for them, concretely?"
+  },
+  {
+    "role": "user",
+    "turn": 2,
+    "text": "Honestly? Both times it was more \"here's your laptop, good luck\" than anything structured — they'd sit in standups not understanding half the acronyms, ping people cold on Slack and feel bad about it, and by week three they still didn't really know who to go to for what."
+  },
+  {
+    "role": "examiner",
+    "turn": 3,
+    "text": "That's a clear picture — no structure, no map of who to ask, learning by cold-Slack-DM embarrassment.\n\nNext question: what makes you think a weekly 1:1 with a senior specifically would have fixed that, as opposed to, say, better written onboarding docs or a Slack channel guide? What did the mentor relationship give them that documentation wouldn't?"
+  },
+  {
+    "role": "user",
+    "turn": 3,
+    "text": "Honestly, I don't know — I never actually compared it against docs, and I couldn't tell you what the mentor relationship gives them beyond \"a person,\" because I also don't know if the seniors even have time to do this properly. Both of those are things I just haven't nailed down yet."
+  },
+  {
+    "role": "examiner",
+    "turn": 4,
+    "text": "Good — noted internally, no need for you to do anything there. Back to the question on the table:\n\nHow many seniors are we actually talking about in your 30-person org, and what's currently on their plates? If each took on a new hire for weekly 1:1s, what would that realistically cost them?"
+  }
+]

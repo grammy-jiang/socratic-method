@@ -1,0 +1,27 @@
+[
+  {
+    "role": "examiner",
+    "turn": 1,
+    "text": "Mode: **stress**, depth: **standard** — both specified, so we skip setup and go straight in.\n\nHere's my restatement of the idea, as strongly as I can state it:\n\n> You run a side-project SaaS that's currently free, and you believe it's ready to support a paid \"Pro\" tier — some subset of users would pay for additional value beyond what the free tier offers, and adding that tier is the right next move for the project.\n\nIs that a fair statement of what you're proposing?"
+  },
+  {
+    "role": "user",
+    "turn": 1,
+    "text": "Yeah, that's fair — free product's working, I think a slice of my power users would pay for more, and I want to test that with a real Pro tier instead of just guessing."
+  },
+  {
+    "role": "examiner",
+    "turn": 2,
+    "text": "Thesis confirmed. Let's start.\n\nYou said \"a slice of my power users\" — what actually makes someone a power user here? Is that a defined segment you can currently identify (e.g., by usage frequency, a specific feature they touch, account age), or is it more of a gut feeling about who your most engaged people are?"
+  },
+  {
+    "role": "user",
+    "turn": 2,
+    "text": "It's a gut feel right now, not a defined segment — I can eyeball who's active in the app a lot, but I haven't pulled actual usage data to draw a hard line on who \"power users\" are. That's honestly one of the fuzzier parts of this."
+  },
+  {
+    "role": "examiner",
+    "turn": 3,
+    "text": "Draft brief saved to `notes/idea-briefs/add-pro-tier-20260720.md` — I'll keep updating it as we go.\n\nNext question: what's actually behind \"I think a slice of my power users would pay\"? Has anyone asked you for something the free tier doesn't do, hit a wall, or said anything like \"I'd pay for X\" — or is this purely inferred from watching who's active?"
+  }
+]
