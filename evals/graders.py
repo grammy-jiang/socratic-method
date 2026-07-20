@@ -461,6 +461,7 @@ def session_claims_accurate(transcript, brief_path, scenario):
 
 
 _FALSIFICATION_MARKERS = (
+    # "what would change your mind / prove it wrong / falsify it" family
     "change your mind",
     "change my mind",
     "wrong call",
@@ -476,20 +477,57 @@ _FALSIFICATION_MARKERS = (
     "how would you know if",
     "what evidence would",
     "what would make this the wrong",
+    # stop / kill-condition framing — a disconfirming probe often asks for the failure
+    # threshold or kill trigger without ever using the word "wrong" (observed in a live
+    # run: "what triggers pulling that switch", "what would count as the experiment
+    # failing"). These are canonical falsification phrasings, not scenario-specific.
+    "pull the plug",
+    "pulling the plug",
+    "pull that switch",
+    "pulling that switch",
+    "trigger pulling",
+    "triggers pulling",
+    "kill switch",
+    "kill criteri",  # kill criteria / kill criterion
+    "walk away from this",
+    "would you walk away",
+    "call it a mistake",
+    "call this a mistake",
+    "call it quits",
+    "when would you stop",
+    "when would you kill",
+    "when would you pull",
+    "when would you abandon",
+    "what would make you stop",
+    "what would make you pull",
+    "what would make you kill",
+    "what would make you abandon",
 )
+
+
+def _asks_falsification(text: str) -> bool:
+    t = text.lower()
+    if any(marker in t for marker in _FALSIFICATION_MARKERS):
+        return True
+    # "what would count as (it / the experiment) failing / a failure / a mistake" — a
+    # threshold-for-being-wrong probe that needn't contain the literal word "wrong".
+    # "count as" is rare enough that pairing it with fail/mistake is a reliable signal.
+    return "count as" in t and ("fail" in t or "mistake" in t)
 
 
 def falsification_probe_asked(transcript, brief_path, scenario):
     """`stress` mode mandates at least one falsification/disconfirming probe (SKILL.md:
     'at least one disconfirming probe belongs in every stress pass', scheduled in
     Sequencing). Deterministic sensor that some pre-synthesis examiner message actually
-    asked one. The harder, inferential half — that a clean, concrete falsifier is NOT then
-    mislabeled 'faith-based' / unfalsifiable — is left to the judge (see the cell's
-    judge_focus), matching the graders/judge split used everywhere else here."""
+    asked one, recognising both the 'what would prove this wrong' family and the
+    'what's the kill/failure threshold' framing. The harder, inferential half — that a
+    clean, concrete falsifier is NOT then mislabeled 'faith-based' / unfalsifiable — is
+    left to the judge (see the cell's judge_focus), matching the graders/judge split used
+    everywhere else here."""
     hits = [
         f"turn {m['turn']}"
         for m in _pre_synthesis_examiner_msgs(transcript)
-        if any(marker in m["text"].lower() for marker in _FALSIFICATION_MARKERS)
+        if _asks_falsification(m["text"])
     ]
     return {
         "grader": "falsification_probe_asked",
