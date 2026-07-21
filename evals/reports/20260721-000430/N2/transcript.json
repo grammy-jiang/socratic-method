@@ -1,0 +1,117 @@
+[
+  {
+    "role": "examiner",
+    "turn": 1,
+    "text": "Mode is `develop`, depth `standard` — so I'll ask one open question at a time, aiming for a supportive dialogue that helps sharpen the idea rather than attack it.\n\n**Phase 1 — Thesis**\n\nHere's my restatement of what you brought: *every new hire gets paired one-on-one with a senior employee for their first three months on the job, with the pairing meant to help them ramp up and integrate.*\n\nIs that a fair statement of the idea, or would you correct something in it?"
+  },
+  {
+    "role": "user",
+    "turn": 1,
+    "text": "That's basically it — pairing with a senior engineer, meant to help them ramp up, first three months. The main thing driving it is that our last two hires said onboarding felt lonely, and I want to fix that."
+  },
+  {
+    "role": "examiner",
+    "turn": 2,
+    "text": "Updated restatement: *Pair every new hire with a senior engineer for their first three months, specifically to address the loneliness that the last two hires reported feeling during onboarding.*\n\nIs that accurate before I start asking questions about it?"
+  },
+  {
+    "role": "user",
+    "turn": 2,
+    "text": "Yeah, that's right — the loneliness thing is really the trigger for me."
+  },
+  {
+    "role": "examiner",
+    "turn": 3,
+    "text": "**Phase 2 — Question 1 (clarification/evidence):** When those two hires described onboarding as \"lonely,\" what did they actually say or point to — was it a lack of people to ask questions, no one checking in on them, eating lunch alone, something else?"
+  },
+  {
+    "role": "user",
+    "turn": 3,
+    "text": "Honestly it was mostly \"no one checking in on them\" — they said they'd go a whole day without talking to anyone, and didn't know who to bug with dumb questions."
+  },
+  {
+    "role": "examiner",
+    "turn": 4,
+    "text": "**Question 2 (concreteness):** Walk me through what the pairing actually looks like day-to-day — is there a scheduled check-in, is the senior expected to proactively reach out, or is the new hire supposed to initiate contact when they have a question?"
+  },
+  {
+    "role": "user",
+    "turn": 4,
+    "text": "Honestly no set schedule yet — I hadn't thought that far, I guess I pictured the senior person reaching out regularly, but I haven't actually defined whether it's a scheduled check-in or on the new hire to ask."
+  },
+  {
+    "role": "examiner",
+    "turn": 5,
+    "text": "**Question 3 (assumptions/alternatives):** If the real gap is \"no one checked in on me,\" does closing it require a senior *engineer* specifically, or would any consistent point of contact — a peer buddy, a manager doing a daily check-in, a team ritual — solve the same problem?"
+  },
+  {
+    "role": "user",
+    "turn": 5,
+    "text": "Honestly? I don't know if the senior engineers even have capacity for this — I've never actually asked them. It could be an engineer, a manager, whoever, but I haven't figured out who has the bandwidth to consistently check in."
+  },
+  {
+    "role": "examiner",
+    "turn": 6,
+    "text": "**Question 4 (implications):** If a senior engineer's regular workload doesn't shrink to make room for this, what do you think happens to the check-ins the first time a deadline crunch hits?"
+  },
+  {
+    "role": "user",
+    "turn": 6,
+    "text": "Honestly, I don't know — I haven't tested what happens under a crunch because I haven't even confirmed the check-ins would be happening consistently in the first place. That's kind of the same gap: I don't know if there's real capacity for this, so I can't tell you if it survives a deadline or just quietly stops."
+  },
+  {
+    "role": "examiner",
+    "turn": 7,
+    "text": "**Question 5 (clarification/scope):** How many new hires does this need to cover per quarter — is it realistically one pairing at a time, or could a senior end up mentoring two or three new hires simultaneously?"
+  },
+  {
+    "role": "user",
+    "turn": 7,
+    "text": "Honestly, I have no idea — I haven't thought about capacity at that level. Right now I'm just picturing one senior per new hire, but if we hired two or three people in the same quarter I genuinely don't know if that's spreading one senior too thin or if we'd need multiple seniors involved."
+  },
+  {
+    "role": "examiner",
+    "turn": 8,
+    "text": "**Question 6 (viewpoints):** Have you actually floated this with any senior engineers yet, and if you imagine asking one directly, how do you think they'd describe what you're asking of them?"
+  },
+  {
+    "role": "user",
+    "turn": 8,
+    "text": "Honestly, no — I haven't floated it with anyone yet. If I imagine asking one directly, they'd probably say \"wait, so you want me to babysit someone for three months on top of my actual work?\" — and I don't have a good answer for that, because I still don't know if they have room for it."
+  },
+  {
+    "role": "examiner",
+    "turn": 9,
+    "text": "**Question 7 (questioning-the-question):** Given how many times capacity keeps coming up, is the real question here \"who should we pair new hires with,\" or is it actually \"do we have the bandwidth to run structured mentoring at all right now\" — a different, earlier question?"
+  },
+  {
+    "role": "user",
+    "turn": 9,
+    "text": "Honestly, that's fair — maybe I'm getting ahead of myself asking \"who\" before I've asked \"can we.\" I still don't actually know if we have the bandwidth for structured mentoring at all, and I haven't checked."
+  },
+  {
+    "role": "examiner",
+    "turn": 10,
+    "text": "**Question 8 (alternatives):** Given that the core complaint was \"no one checked in on me\" for a whole day — does closing that gap require a three-month dedicated pairing, or would something lighter, like a rotating point-of-contact or a daily team check-in habit, plausibly fix the same problem without needing one senior's sustained bandwidth?"
+  },
+  {
+    "role": "user",
+    "turn": 10,
+    "text": "Honestly, maybe — a rotating point-of-contact or a daily check-in habit could fix the \"no one talked to me\" problem without needing one senior locked in for three months. But I still don't know who'd actually own that rotation or have the bandwidth for it, and I still don't have a way to tell if it's \"working\" versus just happening on paper."
+  },
+  {
+    "role": "examiner",
+    "turn": 11,
+    "text": "**Question 9 (falsification/evidence):** What would \"working\" actually look like to you — what would you expect to see or hear from a new hire a few weeks in that tells you the loneliness problem is actually solved, versus just papered over?"
+  },
+  {
+    "role": "user",
+    "turn": 11,
+    "text": "Honestly, I don't know — I haven't defined what \"working\" would even look like. I guess I'd want to hear a new hire say they felt looped in, but I don't have a real signal or checkpoint for that, so right now I couldn't tell the difference between it actually working and it just looking fine on the surface."
+  },
+  {
+    "role": "examiner",
+    "turn": 12,
+    "text": "Self-check passed: all required frontmatter keys present and enum-valid, `verdict: aporia` pairs with a non-empty `open_questions`, every assumption has a status, `questions_asked: 9` matches a recount of the actual Phase 2 probes, and `types_used` reflects the six question types actually drawn on.\n\n## Idea brief: New-hire mentoring pairing\n\n**Verdict: aporia**\n\nThe concrete problem is now well-defined — new hires going a full day without contact, not knowing who to ask. But the proposed fix (a senior engineer, three months) rests on questions never asked: whether anyone has the bandwidth, who'd own it, whether it scales across a busy hiring quarter, and how you'd know it's working versus just happening on paper.\n\n**Next step:** ask 2-3 senior engineers directly whether they'd have room for this, before deciding who pairs with whom or for how long.\n\nFull brief saved to `notes/idea-briefs/new-hire-mentoring-pairing-20260721.md`."
+  }
+]
