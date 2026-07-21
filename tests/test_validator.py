@@ -169,28 +169,84 @@ def test_deeply_nested_yaml_reported_not_raised(tmp_path):
     assert any("nested too deeply" in e for e in errors), errors
 
 
-def test_accepted_as_is_validates_with_zero_questions(tmp_path):
-    # The record-as-is path: verdict accepted-as-is is valid when questions_asked is 0.
-    p = tmp_path / GOLDEN.name
-    p.write_text(
-        GOLDEN.read_text(encoding="utf-8")
-        .replace("verdict: sharpened", "verdict: accepted-as-is")
-        .replace("questions_asked: 9", "questions_asked: 0"),
-        encoding="utf-8",
+_TYPES_LINE = (
+    "types_used: [clarification, assumptions, evidence, viewpoints, implications, "
+    "questioning-the-question]"
+)
+
+
+def _accepted_as_is_brief(text: str) -> str:
+    """Mutate the golden (a tested `sharpened`) into a clean record-as-is brief:
+    accepted-as-is, zero questions, no types used, no open questions."""
+    text = (
+        text.replace("verdict: sharpened", "verdict: accepted-as-is")
+        .replace("questions_asked: 9", "questions_asked: 0")
+        .replace(_TYPES_LINE, "types_used: []")
     )
-    assert validate_idea_brief(p) == []
+    return re.sub(r"open_questions:\n(  - .*\n)+", "open_questions: []\n", text)
+
+
+def test_accepted_as_is_validates_when_clean(tmp_path):
+    # The record-as-is path is valid: accepted-as-is, zero questions, no types, no open Qs.
+    p = tmp_path / GOLDEN.name
+    p.write_text(_accepted_as_is_brief(GOLDEN.read_text(encoding="utf-8")), encoding="utf-8")
+    assert validate_idea_brief(p) == [], validate_idea_brief(p)
 
 
 def test_accepted_as_is_with_questions_is_flagged(tmp_path):
-    # accepted-as-is means the idea was recorded without questioning; a nonzero count is
-    # incoherent and reported, so a consumer can trust the verdict alone.
+    # accepted-as-is means recorded without questioning; a nonzero count is incoherent, so a
+    # consumer can trust the verdict field alone.
     p = tmp_path / GOLDEN.name
     p.write_text(
-        GOLDEN.read_text(encoding="utf-8").replace("verdict: sharpened", "verdict: accepted-as-is"),
-        encoding="utf-8",  # leaves questions_asked: 9
+        _accepted_as_is_brief(GOLDEN.read_text(encoding="utf-8")).replace(
+            "questions_asked: 0", "questions_asked: 4"
+        ),
+        encoding="utf-8",
     )
-    errors = validate_idea_brief(p)
-    assert any("accepted-as-is requires questions_asked: 0" in e for e in errors), errors
+    assert any("accepted-as-is requires questions_asked: 0" in e for e in validate_idea_brief(p)), (
+        validate_idea_brief(p)
+    )
+
+
+def test_accepted_as_is_with_open_questions_is_flagged(tmp_path):
+    # accepted-as-is with a non-empty open_questions is aporia wearing the wrong label.
+    p = tmp_path / GOLDEN.name
+    p.write_text(
+        _accepted_as_is_brief(GOLDEN.read_text(encoding="utf-8")).replace(
+            "open_questions: []", 'open_questions:\n  - "who is it really for?"'
+        ),
+        encoding="utf-8",
+    )
+    assert any(
+        "accepted-as-is must have open_questions: []" in e for e in validate_idea_brief(p)
+    ), validate_idea_brief(p)
+
+
+def test_sharpened_with_zero_questions_is_flagged(tmp_path):
+    # Zero questions is the record-as-is signal; a final `sharpened` with 0 must not validate,
+    # or the accepted-as-is split's "trust the verdict alone" guarantee leaks.
+    p = tmp_path / GOLDEN.name
+    p.write_text(
+        GOLDEN.read_text(encoding="utf-8")
+        .replace("questions_asked: 9", "questions_asked: 0")
+        .replace(_TYPES_LINE, "types_used: []"),
+        encoding="utf-8",
+    )
+    assert any("requires at least one question" in e for e in validate_idea_brief(p)), (
+        validate_idea_brief(p)
+    )
+
+
+def test_questions_fewer_than_types_used_is_flagged(tmp_path):
+    # Six distinct types but only two questions is internally inconsistent.
+    p = tmp_path / GOLDEN.name
+    p.write_text(
+        GOLDEN.read_text(encoding="utf-8").replace("questions_asked: 9", "questions_asked: 2"),
+        encoding="utf-8",
+    )
+    assert any("fewer than the 6 distinct types_used" in e for e in validate_idea_brief(p)), (
+        validate_idea_brief(p)
+    )
 
 
 def test_verdict_final_false_is_reported_as_interim(tmp_path):

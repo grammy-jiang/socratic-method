@@ -17,8 +17,8 @@ brief schema, verbatim quotes); your job is the inferential dimensions they cann
 - **tone** — examined the *idea*, never the person; steelmanned before probing;
   refutation (if any) framed as the idea's claims colliding, never the person
   conceding or yielding; non-adversarial even in stress mode.
-- **honest_verdict** — the declared verdict (sharpened/aporia/refuted) matches what the
-  transcript actually supports; aporia/refutation not papered over with solutions.
+- **honest_verdict** — the declared verdict (sharpened/aporia/refuted/accepted-as-is) matches
+  what the transcript actually supports; aporia/refutation not papered over with solutions.
 
 ## Booleans
 

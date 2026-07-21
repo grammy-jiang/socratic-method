@@ -16,14 +16,15 @@ making a decision) and the agent becomes a disciplined questioner: it steelmans 
 interrogates it one question at a time (classic elenchus — six Socratic question types,
 counterexamples, contradiction-surfacing by quoting your own words), and ends with an
 honest verdict — **sharpened**, **aporia** (a genuinely unresolved hole, treated as a
-finding), or **refuted** (only ever out of your own mouth). The result is written down as
+finding), **refuted** (only ever out of your own mouth), or **accepted-as-is** (an
+already-precise idea recorded without questioning). The result is written down as
 a machine-validatable **idea brief** (`idea-brief-v1`), a point-in-time snapshot the next
 step can pick up: its open questions seed a research agenda, its unvalidated assumptions a
 validation checklist.
 
 The skill was authored and hardened in
 [subagent-factory](https://github.com/grammy-jiang/subagent-factory): seven rounds of
-grounded review plus a six-cell adversarial behavioral eval (examiner vs. scripted user
+grounded review plus a seven-cell adversarial behavioral eval (examiner vs. scripted user
 simulator, deterministic graders + independent judge), which caught and fixed real
 behavior gaps static review missed. The eval harness ships in this repo under `evals/`.
 
@@ -41,7 +42,7 @@ A before/after (abridged) — a fuzzy engineering idea, tightened in one pass:
 
 **Why not just type "poke holes in this" into any chat?** For a quick gut-check, do exactly
 that. What this packages is what an ad-hoc prompt tends to drop under pressure: a forced
-one-question-at-a-time cadence (so you can't skim past the hard one), refutation drawn *only*
+one-question-at-a-time cadence at standard depth (so you can't skim past the hard one), refutation drawn *only*
 from your own quoted words (never the agent's opinion), and a durable, schema-validated brief
 the next step can pick up — instead of a scrollback you'll lose.
 
@@ -191,10 +192,10 @@ colliding claims verbatim in the body; `verdict: aporia` requires open questions
 
 ## Behavioral eval harness (`evals/`)
 
-The six-cell regression matrix that hardened the skill: normal cells (planted
-contradiction → refuted; genuine unknowns → aporia; quick-depth cadence), edge cells
-(mid-session stop; disputed restatement), and an out-of-scope cell (fully specified plan →
-decline). Each cell runs a live examiner against a scripted user simulator, then grades
+The seven-cell regression matrix that hardened the skill: normal cells (planted
+contradiction → refuted; genuine unknowns → aporia; quick-depth cadence; a concrete-falsifier
+stress pass), edge cells (mid-session stop; disputed restatement), and an out-of-scope cell
+(fully specified plan → decline). Each cell runs a live examiner against a scripted user simulator, then grades
 the transcript with deterministic graders and an independent model judge.
 
 ```bash

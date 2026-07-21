@@ -17,7 +17,7 @@ not fixed until something durable changes — a grader, a scenario, or a rail in
 ```text
 src/socratic_method/           the package: cli.py, installer.py, validator.py
 src/socratic_method/assets/    THE PRODUCT: SKILL.md, example-session, idea-brief schema
-evals/                         6-cell behavioral eval harness (run_eval.py, graders, rubric)
+evals/                         7-cell behavioral eval harness (run_eval.py, graders, rubric)
 evals/fixtures/                golden valid brief (load-bearing for tests + CI smoke)
 tests/                         pytest suite (validator mutations, installer, detection, CLI, asset invocation-policy, eval graders)
 .claude/skills/                maintainer skills for developing THIS repo (e.g. /release)

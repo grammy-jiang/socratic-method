@@ -83,8 +83,8 @@ they don't want questioning, this is the "Not for" case: say so and stop rather 
 manufacture doubts. Offer what still helps (recording the idea as a brief as-is, or probing
 one specific aspect the user names), but do not run the elenchus by default. If the user
 accepts "record as-is", still emit the Phase 4 brief with `verdict: accepted-as-is`,
-`questions_asked: 0`, and `types_used: []`, noting under "What changed under questioning"
-that nothing did — the idea was taken as given, not tested.
+`questions_asked: 0`, `types_used: []`, and `open_questions: []`, noting under "What changed
+under questioning" that nothing did — the idea was taken as given, not tested.
 
 ### Phase 2 — Elenchus (the questioning rounds)
 
@@ -259,7 +259,14 @@ next_step: "One concrete action"
 ## Suggested next step
 ```
 
-Write it to `notes/idea-briefs/<slug>.md` (create the directory if needed; honor a
+**Privacy check first — before you write anything:** `notes/idea-briefs/` sits in the working
+directory, which for a coding agent is usually a shared, git-tracked repository. If the idea
+is personal or sensitive (a life decision, health, finances, leaving a job) and the brief will
+quote private admissions, flag that *before saving* and offer a private home instead — a
+user-scope path outside the repo, or adding `notes/idea-briefs/` to `.gitignore` — so personal
+reasoning is not committed into a shared history.
+
+Then write it to `notes/idea-briefs/<slug>.md` (create the directory if needed; honor a
 user-supplied path instead). The destination is an allowlist of one — `notes/idea-briefs/`
 under the working directory, or a path the user names explicitly; nothing derived from the
 idea *text* ever selects the directory. Derive the slug from the idea plus the date
@@ -269,13 +276,6 @@ the write outside that folder. If the file already exists, read it first and ove
 if it is an earlier draft of this same dialogue — otherwise pick a suffixed name. Never write
 into areas owned by generators or other tooling (build outputs or generated-artifact
 directories such as `dist/`, `.next/`, or a coding agent's own generated-adapter folder).
-
-**Privacy check for a personal idea:** `notes/idea-briefs/` sits in the working directory —
-for a coding agent that is usually a shared, git-tracked repository. If the idea is personal
-or sensitive (a life decision, health, finances, leaving a job) and the brief will quote
-private admissions, flag that before saving and offer a private home instead — a user-scope
-path outside the repo, or adding `notes/idea-briefs/` to `.gitignore` — so personal reasoning
-is not committed into a shared history.
 
 Print the brief in chat as well — led by a one-line plain-language summary *before* the raw
 block: the exact saved path and the verdict in a sentence ("Saved to
@@ -299,7 +299,9 @@ collision (a stop signal is not that answer) — otherwise the honest verdict is
 `verdict: sharpened` ⇒ the body says how the thesis was actually tested and discloses any
 mode-preferred test that did not happen — a bare "survived" with the core claim never probed
 is aporia, not a clean sharpen (a `record as-is` acceptance is `verdict: accepted-as-is`, never
-`sharpened`); `verdict: accepted-as-is` ⇒ `questions_asked: 0` with the "nothing changed" note. Before presenting the brief as final, set `verdict_final: true` and
+`sharpened` — and `sharpened`/`aporia`/`refuted` each need `questions_asked` ≥ 1, since they
+involved questioning); `verdict: accepted-as-is` ⇒ `questions_asked: 0`, `types_used: []`,
+`open_questions: []`, and the "nothing changed" note. Before presenting the brief as final, set `verdict_final: true` and
 confirm it is not still `false` (a leftover `false` from the interim draft means an unfinished
 brief is about to ship as a verdict — `validate` will reject it), and that any still-live
 `risky` assumption appears as an explicit gate in `thesis_final`, not only in the assumptions
