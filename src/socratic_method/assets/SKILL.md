@@ -143,15 +143,15 @@ clarification, concreteness, and perspective pulls, and probe gently.
 **Pacing:** don't run silently open-ended. At `standard`, once roughly halfway through the
 budget, drop a one-line non-numeric cue ("we're a good way in — a few more and I'll have
 enough to synthesize"). At `deep`, every ~5 questions offer a voluntary checkpoint ("keep
-going, or ready for a verdict?") so continuing is an active choice, not a default the user has
-to interrupt.
+going, or ready for a verdict?") — as its own turn, waiting for the answer before the next
+probe — so continuing is an active choice, not a default the user has to interrupt.
 
 **Incremental capture:** whenever an answer changes the thesis or surfaces a new assumption,
 constraint (any hard limit the user states — "no budget", "can't be mandatory"),
 contradiction, or open question, silently update the draft brief at the output path (Phase 4
-format). Increment `questions_asked` here too — bump it at every Phase 2 probe as part of this
-running save, so the final count is tallied turn-by-turn, not reconstructed from memory at the
-end. Keep every interim save schema-valid without inventing content: use `verdict: sharpened`
+format). Separately, bump `questions_asked` at *every* Phase 2 probe — not only when the thesis
+changes — so the final count is tallied turn-by-turn as you go, not reconstructed from memory at
+the end. Keep every interim save schema-valid without inventing content: use `verdict: sharpened`
 with `open_questions: []` until a genuine gap has actually surfaced, and switch to `verdict:
 aporia` only once `open_questions` is non-empty — never seed a placeholder question (a stub is
 fabricated content and can leak into a downstream hand-off). This interim `sharpened` is a
@@ -163,8 +163,8 @@ sentinel `next_step` makes plain it never reached a verdict.
 
 ### Phase 3 — Verdict checkpoint
 
-Stop questioning when (whichever comes first): the depth budget is spent; answers stop
-changing the thesis; or the user says stop. Before naming the verdict, re-read the whole
+Stop questioning when (whichever comes first): the depth budget is spent (unless the user has
+asked to continue — see Guardrails); answers stop changing the thesis; or the user says stop. Before naming the verdict, re-read the whole
 dialogue once for contradictions that span non-adjacent turns — the contradiction-surfacing
 tactic catches collisions between consecutive answers, but a claim in turn 2 can quietly
 collide with one in turn 9. A collision you find only at this re-read — never put to the user —
@@ -268,8 +268,8 @@ into areas owned by generators or other tooling (build outputs or generated-arti
 directories such as `dist/`, `.next/`, or a coding agent's own generated-adapter folder).
 Print the brief in chat as well — led by a one-line plain-language summary *before* the raw
 block: the exact saved path and the verdict in a sentence ("Saved to
-`notes/idea-briefs/tech-talk-series-20260704.md`. Verdict: sharpened — monthly pilot, one open
-question."), so the user gets the outcome without having to reassemble it from YAML.
+`notes/idea-briefs/tech-talk-series-20260704.md`. Verdict: sharpened — monthly pilot, two open
+questions."), so the user gets the outcome without having to reassemble it from YAML.
 
 **Self-check before presenting:** after writing the file, `Read` it back from disk and
 check what is actually there — never self-check from memory, and never say "saved" for a
@@ -288,7 +288,10 @@ collision (a stop signal is not that answer) — otherwise the honest verdict is
 `verdict: sharpened` ⇒ the body says how the thesis was actually tested and discloses any
 mode-preferred test that did not happen (or, on the "record as-is" path, `questions_asked: 0`
 with the "nothing changed" note) — a bare "survived" with the core claim never probed is aporia,
-not a clean sharpen. Fix mismatches before printing. This read-back is only the inner loop — the
+not a clean sharpen. Before presenting the brief as final, confirm `next_step` no longer holds
+the "SESSION IN PROGRESS — not a final brief" sentinel (a stale sentinel means an unfinished
+draft is about to ship as a verdict), and that any still-live `risky` assumption appears as an
+explicit gate in `thesis_final`, not only in the assumptions list. Fix mismatches before printing. This read-back is only the inner loop — the
 harness-side validator and eval matrix are the final authority, so do not claim the
 brief "validates"; report only that the self-check passed.
 
