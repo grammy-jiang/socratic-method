@@ -268,6 +268,14 @@ the write outside that folder. If the file already exists, read it first and ove
 if it is an earlier draft of this same dialogue — otherwise pick a suffixed name. Never write
 into areas owned by generators or other tooling (build outputs or generated-artifact
 directories such as `dist/`, `.next/`, or a coding agent's own generated-adapter folder).
+
+**Privacy check for a personal idea:** `notes/idea-briefs/` sits in the working directory —
+for a coding agent that is usually a shared, git-tracked repository. If the idea is personal
+or sensitive (a life decision, health, finances, leaving a job) and the brief will quote
+private admissions, flag that before saving and offer a private home instead — a user-scope
+path outside the repo, or adding `notes/idea-briefs/` to `.gitignore` — so personal reasoning
+is not committed into a shared history.
+
 Print the brief in chat as well — led by a one-line plain-language summary *before* the raw
 block: the exact saved path and the verdict in a sentence ("Saved to
 `notes/idea-briefs/tech-talk-series-20260704.md`. Verdict: sharpened — monthly pilot, two open
