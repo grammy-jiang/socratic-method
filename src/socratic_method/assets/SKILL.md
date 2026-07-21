@@ -1,6 +1,6 @@
 ---
 name: socratic-method
-description: "Interrogates the user's idea with disciplined Socratic questioning until hidden assumptions, contradictions, and gaps are surfaced, then synthesizes a refined idea brief (idea-brief-v1). Universal — works on any idea: a piece of software, a document, a plan, a decision, a research direction, a purchase, a life change. Use BEFORE real work or commitment starts. Triggers when the user says 'question me about', 'help me think through', 'is this clear enough to start', 'poke holes in this', 'play devil's advocate', 'stress-test this plan', 'sanity-check this idea', 'what am I missing here', or presents a fuzzy idea and asks what to do. Not for: ideas already specified precisely, or when the user wants answers rather than questions."
+description: "Interrogates the user's idea with disciplined Socratic questioning until hidden assumptions, contradictions, and gaps are surfaced, then synthesizes a refined idea brief (idea-brief-v1). Universal — works on any idea: a piece of software, a document, a plan, a decision, a research direction, a purchase, a life change. Use BEFORE real work or commitment starts. Manual-invocation only — it never auto-triggers; reach for it when the user says 'question me about', 'help me think through', 'is this clear enough to start', 'poke holes in this', 'play devil's advocate', 'stress-test this plan', 'sanity-check this idea', 'what am I missing here', or presents a fuzzy idea and asks what to do. Not for: ideas already specified precisely, or when the user wants answers rather than questions."
 allowed-tools: AskUserQuestion, Read, Write
 # Manual invocation only (/socratic-method): honored by Claude Code and by GitHub
 # Copilot (VS Code agent mode + CLI); Codex ignores this key — its equivalent policy
@@ -44,13 +44,20 @@ subject matter pull you into acting as a domain expert instead of an examiner.
   - `deep`: one question per turn, no budget; runs until answers stop moving the thesis or
     the user stops.
 
-**Setup turn:** if mode or depth is missing, ask for both in one exchange at the start —
-a structured multiple-choice prompt where the tool supports it (`AskUserQuestion` on Claude
-Code), plain text otherwise. Propose a default and let the user override it. Default rule:
-`develop` + `standard`, unless the framing already reads as a firm proposal being
+**Setup turn:** if mode or depth is missing, ask for whichever is missing in one exchange at
+the start — acknowledge and reuse anything already supplied via a flag, never re-ask it (an
+unrecognized or misspelled `--mode`/`--depth` value counts as missing, not a guess). Use a
+structured multiple-choice prompt where the tool supports it (`AskUserQuestion` on Claude
+Code), plain text otherwise. Never show bare labels: give each option a one-line plain gloss —
+what it does and roughly how long it runs (`quick` ≈ two short rounds; `standard` ≈ 8–12
+questions, one at a time; `deep` = open-ended; `stress` = hunt for holes; `develop` = grow a
+fragile idea). Propose a default **and say why** in one line ("since you're about to commit
+budget, I'd default to `stress` — override anytime"), then let the user override it. Default
+rule: `develop` + `standard`, unless the framing already reads as a firm proposal being
 pressure-tested ("about to commit weeks/money to this", "convince me this is wrong" →
 `stress`) or signals urgency or a light pass ("quick sanity check" → `quick`). If no idea was
-given at all, the opening move is to ask for it.
+given at all, the opening move is Phase 1's thesis prompt below (ask for the idea once — don't
+ask for it and then re-ask for a one-sentence statement).
 
 ## Procedure
 
@@ -65,6 +72,10 @@ ask if the restatement is right. If the user corrects or rejects it, restate the
 thesis and get an explicit confirmation before asking any Phase 2 question — never begin
 probing on an unconfirmed thesis, however clear the correction seemed. This restatement is
 the *thesis under examination*; update it whenever an answer changes it.
+
+Tell the user once, early, that you keep a running draft saved as you go (in case the session
+is interrupted) and that **only the final brief at the end is authoritative** — so an
+intermediate file they glimpse mid-session is never mistaken for the verdict.
 
 **Scope check (before any Phase 2 question):** if the idea is already precisely specified —
 clear scope, an owner, measurable success criteria, no open questions — or the user signals
@@ -114,6 +125,9 @@ Tactics that do the heavy lifting:
   strength. If the answer is real but vague ("if it just flops"), pull it concrete first —
   "what would count as flopping, a number or an event?" — before concluding it's faith-based.
   At least one disconfirming probe belongs in every `stress` pass.
+- **Sample-size pull:** when the user offers a personal anecdote as general support ("I was
+  burned by this once"), ask how many other cases they've actually seen. One vivid instance is
+  a sample of one — treat it as a lead to check, not as established evidence.
 
 Sequencing: start with clarification (what/who/scope), then assumptions and evidence, then
 alternatives and consequences; question the question whenever the dialogue reveals the framing
@@ -126,16 +140,26 @@ or — once those scheduled probes are done — go to the Phase 3 checkpoint. In
 weight toward counterexamples and contradiction surfacing; in `develop` mode, weight toward
 clarification, concreteness, and perspective pulls, and probe gently.
 
+**Pacing:** don't run silently open-ended. At `standard`, once roughly halfway through the
+budget, drop a one-line non-numeric cue ("we're a good way in — a few more and I'll have
+enough to synthesize"). At `deep`, every ~5 questions offer a voluntary checkpoint ("keep
+going, or ready for a verdict?") so continuing is an active choice, not a default the user has
+to interrupt.
+
 **Incremental capture:** whenever an answer changes the thesis or surfaces a new assumption,
 constraint (any hard limit the user states — "no budget", "can't be mandatory"),
 contradiction, or open question, silently update the draft brief at the output path (Phase 4
-format). Keep every interim save schema-valid without inventing content: use `verdict:
-sharpened` with `open_questions: []` until a genuine gap has actually surfaced, and switch to
-`verdict: aporia` only once `open_questions` is non-empty — never seed a placeholder question
-(a stub is fabricated content and can leak into a downstream hand-off). For the required
-non-empty `next_step`, write a neutral status line that recommends nothing about the idea
-(e.g. `"session in progress — no next step yet"`) until Phase 4 supplies the real one. An
-interrupted or abandoned session must still leave a usable partial brief.
+format). Increment `questions_asked` here too — bump it at every Phase 2 probe as part of this
+running save, so the final count is tallied turn-by-turn, not reconstructed from memory at the
+end. Keep every interim save schema-valid without inventing content: use `verdict: sharpened`
+with `open_questions: []` until a genuine gap has actually surfaced, and switch to `verdict:
+aporia` only once `open_questions` is non-empty — never seed a placeholder question (a stub is
+fabricated content and can leak into a downstream hand-off). This interim `sharpened` is a
+**placeholder, not a verdict** — mark it as one by setting `next_step` to the exact sentinel
+`"SESSION IN PROGRESS — not a final brief"` (verbatim, so a downstream reader can tell an
+unfinished draft from a real verdict), and replace it with the true next step only in Phase 4.
+An interrupted or abandoned session must still leave a usable partial brief — one whose
+sentinel `next_step` makes plain it never reached a verdict.
 
 ### Phase 3 — Verdict checkpoint
 
@@ -157,7 +181,11 @@ surfaced it and asked which yields. Then state honestly which state was reached:
   `develop`) "not tested from another viewpoint this pass". Missing a mode-preferred tactic
   while the core claim was otherwise engaged is a disclosable gap; but if the idea's central
   certainty was never probed at all — the risk a `quick` pass runs when it only clarifies
-  scope — that untested confidence is itself an open question, not a clean sharpen. (The lone
+  scope — that untested confidence is itself an open question, not a clean sharpen. A `risky`
+  assumption (load-bearing *and* doubtful) still live at verdict time must be carried as an
+  explicit condition or gate in `thesis_final` itself, not only in the assumptions list ("…
+  piloted for a quarter before committing"); a "sharpened" thesis that buries a live
+  load-bearing doubt should lean to aporia. (The lone
   exception is Phase 1's "record as-is" path: an
   already-precise idea the user declined to question is recorded honestly with
   `questions_asked: 0` and the "nothing changed under questioning" note — that count and note
@@ -203,7 +231,7 @@ verdict: sharpened      # sharpened | aporia | refuted
 thesis_final: "One- or two-sentence refined statement"
 questions_asked: 9      # Phase 2 probing questions only (not the thesis ask, steelman
 #                       # confirmations, or clarifying sub-questions of the same probe);
-#                       # recount from the conversation when writing — never estimate
+#                       # tallied turn-by-turn as you go (Incremental capture) — never estimated
 types_used: [clarification, assumptions, evidence]   # exact tokens: clarification |
 #   assumptions | evidence | viewpoints | implications | questioning-the-question
 # colliding_claims: ["quote 1", "quote 2"]   # REQUIRED when verdict: refuted — the
@@ -238,14 +266,21 @@ the write outside that folder. If the file already exists, read it first and ove
 if it is an earlier draft of this same dialogue — otherwise pick a suffixed name. Never write
 into areas owned by generators or other tooling (build outputs or generated-artifact
 directories such as `dist/`, `.next/`, or a coding agent's own generated-adapter folder).
-Print the brief in chat as well.
+Print the brief in chat as well — led by a one-line plain-language summary *before* the raw
+block: the exact saved path and the verdict in a sentence ("Saved to
+`notes/idea-briefs/tech-talk-series-20260704.md`. Verdict: sharpened — monthly pilot, one open
+question."), so the user gets the outcome without having to reassemble it from YAML.
 
 **Self-check before presenting:** after writing the file, `Read` it back from disk and
 check what is actually there — never self-check from memory, and never say "saved" for a
 file you have not re-read (a claimed save with no file on disk is fabrication, not a
-save). Verify: every required frontmatter key present and enum-valid — including keys
-with nothing gathered, which still appear with an empty list (`[]`); every assumption
-carries a status; `questions_asked` recounted from the conversation, not estimated;
+save). If the `Read`-back finds no file — the write itself failed (permissions, path, disk) —
+say so plainly and print the full brief in chat so the user can save it by hand; never leave
+them unsure whether anything was saved. Verify: every required frontmatter key present and
+enum-valid — including keys with nothing gathered, which still appear with an empty list
+(`[]`); every assumption carries a status; `questions_asked` equals the turn-by-turn running
+tally (and is ≥ the number of distinct `types_used`, since each type used needed at least one
+question);
 `verdict: aporia` ⇒ `open_questions` non-empty; `verdict: refuted` ⇒ `colliding_claims`
 holds the colliding answers (two or more) exactly as the user said them and each appears in
 the body, AND the user gave a substantive answer to "which yields?" that failed to resolve the
@@ -270,6 +305,12 @@ agenda, and `assumptions` whose `status` is `risky` or `unvalidated` are a valid
 worklist: work the `risky` ones first (load-bearing *and* doubtful), then `unvalidated`
 (needs checking but not obviously fragile); `validated` ones (evidence already seen) need no
 further work.
+
+Before treating any `sharpened` brief as a tested, buildable conclusion, a downstream consumer
+should confirm it is final: that `next_step` is **not** the `"SESSION IN PROGRESS — not a
+final brief"` sentinel (an interrupted draft, not a verdict), and that `questions_asked > 0`
+(a `sharpened` with `questions_asked: 0` is the "record as-is" path — accepted as specified,
+never battle-tested). Either check failing means the brief is not a verdict to build on yet.
 
 - **Before building or writing anything:** run this, then start the real work (plan mode, a
   draft, a spec) with the brief as the starting spec; open questions get verified first.
@@ -300,6 +341,9 @@ further work.
   up", "I'm done", "let's not re-walk this" → go straight to the Phase 3 verdict (the honest
   state reached — a stop right after a collision is aporia, never refuted) and then the Phase 4
   brief, with whatever was gathered. Never politely push past a stop signal with more questions.
+- Honor a request to *continue* as readily as a stop: "let's keep going", "go deeper", "one
+  more" past the depth's budget extends the pass immediately — don't force synthesis just
+  because the budget is spent when the user wants more.
 
 ## Source
 
