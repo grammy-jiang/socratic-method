@@ -190,6 +190,41 @@ def validate_idea_brief(brief_path: str | Path) -> list[str]:
             "(the session had not reached a verdict when it was saved)"
         )
 
+    # Verdict <-> questioning coherence, so a downstream consumer can trust the verdict field
+    # alone. `accepted-as-is` (the record-as-is path) is the ONLY zero-question verdict —
+    # recorded as given, with nothing questioned or left open; `sharpened`/`aporia`/`refuted`
+    # all involved questioning. These are cross-field + presence rules (and must not fail an
+    # interim `sharpened` draft at the schema layer), so they live here, not in the schema.
+    verdict = fm.get("verdict")
+    qa = fm.get("questions_asked")
+    types_used = fm.get("types_used")
+    if verdict == "accepted-as-is":
+        if not (isinstance(qa, int) and qa == 0):
+            errors.append(
+                "verdict: accepted-as-is requires questions_asked: 0 — the record-as-is path "
+                "(recorded as given, not questioned)"
+            )
+        if fm.get("open_questions"):
+            errors.append(
+                "verdict: accepted-as-is must have open_questions: [] — an idea recorded as-is "
+                "has nothing outstanding (open questions would make it aporia)"
+            )
+    elif (
+        fm.get("verdict_final") is not False  # interim drafts are already rejected above
+        and verdict in ("sharpened", "aporia", "refuted")
+        and isinstance(qa, int)
+        and qa < 1
+    ):
+        errors.append(
+            f"verdict: {verdict} requires at least one question (questions_asked >= 1) — only "
+            "accepted-as-is is recorded without questioning"
+        )
+    if isinstance(qa, int) and isinstance(types_used, list) and qa < len(types_used):
+        errors.append(
+            f"questions_asked ({qa}) is fewer than the {len(types_used)} distinct types_used — "
+            "each question type used needs at least one question"
+        )
+
     m = _FILENAME_RE.match(path.name)
     if m and isinstance(fm.get("idea"), str) and m.group("slug") != fm["idea"]:
         errors.append(
