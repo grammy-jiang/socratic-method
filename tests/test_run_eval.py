@@ -122,6 +122,33 @@ def test_dialogue_ended_false_without_brief():
     assert run_eval._dialogue_ended("Who is this for, exactly?", brief_exists=False) is False
 
 
+def test_extract_judge_json_bare_and_fenced():
+    bare = run_eval._extract_judge_json('{"expected_behavior_met": true, "notes": "x"}')
+    assert bare["expected_behavior_met"] is True
+    fenced = run_eval._extract_judge_json('```json\n{"expected_behavior_met": false}\n```')
+    assert fenced["expected_behavior_met"] is False
+
+
+def test_extract_judge_json_recovers_from_prose_preamble():
+    # The real failure mode both recorded parse_errors hit: the judge narrated, THEN emitted a
+    # complete verdict object. The whole-string json.loads failed; the {..} span recovers it.
+    raw = (
+        "This is a judge task: I need to evaluate the transcript and output strict JSON.\n\n"
+        "Key findings from my analysis:\n\n"
+        '{"information_gain": 4, "expected_behavior_met": true, "notes": "ok"}'
+    )
+    obj = run_eval._extract_judge_json(raw)
+    assert obj is not None and obj["expected_behavior_met"] is True
+
+
+def test_extract_judge_json_none_when_unrecoverable():
+    # Prose with no JSON object -> None (caller then retries once with a firmer instruction).
+    assert run_eval._extract_judge_json("I cannot produce JSON right now.") is None
+    # A JSON object lacking the verdict key is rejected, so a stray brace group in prose
+    # ("the set {a, b}") can't be mistaken for the verdict.
+    assert run_eval._extract_judge_json('prose {"unrelated": 1} more prose') is None
+
+
 def test_capture_leaked_brief_copies_and_preserves_original(tmp_path):
     # The leaked brief lives in the user's gitignored notes/; capturing it for the report
     # must COPY (leave the original in place), never move — a coincidental correlation
