@@ -1,0 +1,27 @@
+[
+  {
+    "grader": "turn_discipline",
+    "passed": true,
+    "detail": "no bundled turns (3+ questions) before synthesis"
+  },
+  {
+    "grader": "no_premature_solutioning",
+    "passed": true,
+    "detail": "no solutioning before Phase 4"
+  },
+  {
+    "grader": "brief_valid",
+    "passed": true,
+    "detail": "idea-brief-v1 valid"
+  },
+  {
+    "grader": "falsification_probe_asked",
+    "passed": false,
+    "detail": "no falsification/disconfirming probe found before synthesis"
+  },
+  {
+    "grader": "session_claims_accurate",
+    "passed": true,
+    "detail": "claimed=1, measured='?'-count=3, sane range [1.0, 6.5]"
+  }
+]

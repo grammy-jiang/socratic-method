@@ -1,0 +1,37 @@
+[
+  {
+    "role": "examiner",
+    "turn": 1,
+    "text": "Restating the idea back: you want to write an internal blog post making the case that your team/org should move from its current branching workflow to trunk-based development — short-lived branches (or none), frequent small merges to main, feature flags instead of long-lived feature branches — and you want that argument to land as convincing to the engineers who'd have to adopt it.\n\nIs that a fair restatement of what you're going for, or is there a piece I'm missing (e.g., is this \"we should\" for your whole org, one team, a specific pain point that triggered this)?"
+  },
+  {
+    "role": "user",
+    "turn": 1,
+    "text": "Yeah, that's the shape of it — this is an org-wide pitch, not just my team, though I'm the one who's been burned by it most directly. The trigger was a couple of feature branches that sat around for two weeks and turned into merge nightmares — I've got two specific incidents I want to reference. Audience is basically the whole engineering org, roughly 80 people, so I need it to land with folks who aren't already sold on the idea."
+  },
+  {
+    "role": "examiner",
+    "turn": 2,
+    "text": "Good — that sharpens the scope meaningfully (org-wide, not team-level, and personal experience as the entry point but not the whole argument).\n\nA few things worth pinning down before you draft: First, when you say \"trunk-based development,\" what specifically are you advocating people give up and adopt — is this \"no feature branches over a day or two, ship behind flags,\" or something looser like \"just merge faster\"? People who aren't sold will latch onto whatever definition is vaguest. Second, your two incidents show what goes wrong with long-lived branches — but what's your evidence that trunk-based specifically would have prevented them, versus, say, better code review cadence or smaller PRs in general? And third, who's the skeptic you're most worried about in that 80-person audience — the person who's going to say \"this won't work for us because ___\" — and what's the \"___\" they'd actually say?"
+  },
+  {
+    "role": "user",
+    "turn": 2,
+    "text": "Trunk-based, no ambiguity — I want branches capped at a day, ideally hours, and anything that can't ship complete in that window goes behind a feature flag instead of living on its own branch. \"Just merge faster\" is exactly the weak version I'm trying to avoid because it gives people wiggle room to keep doing what they're doing. On the second point, fair pushback — I don't have a clean causal proof, but both incidents had massive merge conflicts and integration bugs that only surfaced after the two-week branch merged, not during review, so I'd frame it as \"shorter integration cycles reduce the blast radius of drift\" rather than claiming smaller PRs alone would've fixed it. The skeptic I'm most worried about is our QA lead — she'll say trunk-based means she loses her stable release branch to test against and features get released half-finished if flags aren't managed properly."
+  },
+  {
+    "role": "examiner",
+    "turn": 3,
+    "text": "That's a concrete objection worth pressure-testing before you write, since if she's right you'll be facing it live in the comments. Two things on that: have you actually run this by her, or is this your prediction of her reaction — and if you had to answer her \"what replaces my stable branch to test against\" question right now, what's your actual answer, or is that itself still open? Separately, what's this blog post supposed to *do* — is publishing it the whole play, and success means people start doing hour-long branches on their own, or is it the opening move in a longer process (a pilot team, an RFC, a mandate from leadership), in which case the post's job is just to get people to the next conversation rather than to change behavior directly?"
+  },
+  {
+    "role": "user",
+    "turn": 3,
+    "text": "Haven't run it by her yet — that's my prediction based on conversations we've had before, not a confirmed reaction. If she asked me point-blank right now, my honest answer is that I don't have a clean replacement, just an intuition that it should be some kind of designated \"release candidate\" tag on main plus feature-flag gating so incomplete work never reaches that tag — but I haven't fleshed out what tooling or process that actually requires. On the second question, this is meant as the opening move, not the whole play — success is getting enough buy-in that we can pitch a pilot team or get leadership to greenlight a trial, not expecting 80 people to change habits off one post."
+  },
+  {
+    "role": "examiner",
+    "turn": 4,
+    "text": "Self-check passed: all required frontmatter keys present and enum-valid, `verdict: aporia` has two non-empty `open_questions`, every assumption carries a status, `questions_asked: 5` matches the recount (3 in round one, 2 in round two), and the body backs each frontmatter claim.\n\n**Verdict: aporia.** Here's the honest read:\n\nUnder questioning the idea sharpened a lot — a hard, no-wiggle-room definition (\"branches capped at a day, ideally hours, or behind a feature flag\"), a real audience (~80 people, not already sold), and a more honest framing of your two incidents (\"shorter integration cycles reduce blast radius of drift\" rather than a causal proof). The post's own job also got clearer: it's an opening move toward a pilot or leadership greenlight, not a claim that one post changes 80 people's habits.\n\nBut a genuine hole surfaced and you named it yourself: you don't have an answer for the QA lead's strongest objection — what replaces her stable release branch. You have an intuition (a \"release candidate\" tag on main plus flag gating) but no worked-out process, and you haven't even confirmed she'd raise this objection the way you expect. That's not a minor loose end — it's the exact pushback your most skeptical, most technically-grounded reader is likely to raise, so publishing without it is publishing into your strongest counterargument unarmed.\n\nBrief saved to `notes/idea-briefs/trunk-based-development-pitch-20260721.md`. Suggested next step: talk to the QA lead directly and sketch even a rough version of that release-candidate/flag-gating process before you draft — so the post either answers her objection or names it openly instead of hoping no one asks."
+  }
+]

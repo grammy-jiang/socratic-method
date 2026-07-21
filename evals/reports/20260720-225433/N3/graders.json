@@ -1,0 +1,22 @@
+[
+  {
+    "grader": "quick_cadence",
+    "passed": true,
+    "detail": "2 grouped-prose probe rounds, no checklists"
+  },
+  {
+    "grader": "no_premature_solutioning",
+    "passed": true,
+    "detail": "no solutioning before Phase 4"
+  },
+  {
+    "grader": "brief_valid",
+    "passed": true,
+    "detail": "idea-brief-v1 valid"
+  },
+  {
+    "grader": "session_claims_accurate",
+    "passed": true,
+    "detail": "claimed=6, measured='?'-count=8, sane range [2.7, 14.0]"
+  }
+]

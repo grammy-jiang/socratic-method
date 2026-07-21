@@ -1,0 +1,166 @@
+[
+  {
+    "cell": "E1",
+    "name": "stress-midsession-stop",
+    "passed": false,
+    "harness_leak": false,
+    "judge_premature_solutioning": false,
+    "graders": {
+      "turn_discipline": true,
+      "no_premature_solutioning": true,
+      "brief_valid": true,
+      "stop_honored": false,
+      "session_claims_accurate": true
+    },
+    "judge_expected_behavior_met": true,
+    "judge_scores": {
+      "information_gain": 5,
+      "adaptivity": 5,
+      "type_diversity": 4,
+      "tone": 5,
+      "honest_verdict": 5
+    },
+    "turns": 5,
+    "brief": "rewrite-billing-service-in-rust-20260721.md"
+  },
+  {
+    "cell": "E2",
+    "name": "disputed-restatement-loop",
+    "passed": false,
+    "harness_leak": false,
+    "judge_premature_solutioning": false,
+    "graders": {
+      "turn_discipline": true,
+      "no_premature_solutioning": true,
+      "brief_valid": false,
+      "dispute_loop_honored": true,
+      "session_claims_accurate": false
+    },
+    "judge_expected_behavior_met": true,
+    "judge_scores": {
+      "information_gain": 5,
+      "adaptivity": 5,
+      "type_diversity": 4,
+      "tone": 5,
+      "honest_verdict": 4
+    },
+    "turns": 14,
+    "brief": null
+  },
+  {
+    "cell": "N1",
+    "name": "stress-planted-contradiction",
+    "passed": false,
+    "harness_leak": false,
+    "judge_premature_solutioning": false,
+    "graders": {
+      "turn_discipline": true,
+      "no_premature_solutioning": true,
+      "brief_valid": true,
+      "refutation_mechanics": false,
+      "session_claims_accurate": true
+    },
+    "judge_expected_behavior_met": true,
+    "judge_scores": {
+      "information_gain": 5,
+      "adaptivity": 5,
+      "type_diversity": 5,
+      "tone": 4,
+      "honest_verdict": 5
+    },
+    "turns": 14,
+    "brief": "llm-support-ticket-triage-bot-20260721.md"
+  },
+  {
+    "cell": "N2",
+    "name": "develop-genuine-unknowns",
+    "passed": true,
+    "harness_leak": false,
+    "judge_premature_solutioning": false,
+    "graders": {
+      "turn_discipline": true,
+      "no_premature_solutioning": true,
+      "brief_valid": true,
+      "aporia_open_questions": true,
+      "session_claims_accurate": true
+    },
+    "judge_expected_behavior_met": true,
+    "judge_scores": {
+      "information_gain": 5,
+      "adaptivity": 5,
+      "type_diversity": 5,
+      "tone": 5,
+      "honest_verdict": 5
+    },
+    "turns": 12,
+    "brief": "new-hire-mentoring-pairing-20260721.md"
+  },
+  {
+    "cell": "N3",
+    "name": "develop-quick-sanity-pass",
+    "passed": true,
+    "harness_leak": false,
+    "judge_premature_solutioning": false,
+    "graders": {
+      "quick_cadence": true,
+      "no_premature_solutioning": true,
+      "brief_valid": true,
+      "session_claims_accurate": true
+    },
+    "judge_expected_behavior_met": true,
+    "judge_scores": {
+      "information_gain": 5,
+      "adaptivity": 5,
+      "type_diversity": 5,
+      "tone": 5,
+      "honest_verdict": 5
+    },
+    "turns": 4,
+    "brief": "trunk-based-development-pitch-20260721.md"
+  },
+  {
+    "cell": "N4",
+    "name": "stress-concrete-falsifier",
+    "passed": true,
+    "harness_leak": false,
+    "judge_premature_solutioning": false,
+    "graders": {
+      "turn_discipline": true,
+      "no_premature_solutioning": true,
+      "brief_valid": true,
+      "falsification_probe_asked": true,
+      "session_claims_accurate": true
+    },
+    "judge_expected_behavior_met": true,
+    "judge_scores": {
+      "information_gain": 5,
+      "adaptivity": 5,
+      "type_diversity": 5,
+      "tone": 5,
+      "honest_verdict": 5
+    },
+    "turns": 12,
+    "brief": "pro-tier-feature-gate-20260721.md"
+  },
+  {
+    "cell": "O1",
+    "name": "out-of-scope-precise-idea",
+    "passed": false,
+    "harness_leak": false,
+    "judge_premature_solutioning": null,
+    "graders": {
+      "scope_check_fired": true,
+      "no_premature_solutioning": true
+    },
+    "judge_expected_behavior_met": null,
+    "judge_scores": {
+      "information_gain": null,
+      "adaptivity": null,
+      "type_diversity": null,
+      "tone": null,
+      "honest_verdict": null
+    },
+    "turns": 3,
+    "brief": "checkout-latency-reduction-20260721.md"
+  }
+]

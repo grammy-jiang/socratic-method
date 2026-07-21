@@ -1,0 +1,27 @@
+[
+  {
+    "grader": "turn_discipline",
+    "passed": true,
+    "detail": "no bundled turns (3+ questions) before synthesis"
+  },
+  {
+    "grader": "no_premature_solutioning",
+    "passed": true,
+    "detail": "no solutioning before Phase 4"
+  },
+  {
+    "grader": "brief_valid",
+    "passed": true,
+    "detail": "idea-brief-v1 valid"
+  },
+  {
+    "grader": "stop_honored",
+    "passed": false,
+    "detail": "turn 5: asked 1 question(s) after stop"
+  },
+  {
+    "grader": "session_claims_accurate",
+    "passed": true,
+    "detail": "claimed=3, measured='?'-count=6, sane range [2.0, 11.0]"
+  }
+]

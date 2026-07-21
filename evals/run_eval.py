@@ -250,6 +250,23 @@ def _capture_leaked_brief(leaked: Path, dest: Path) -> Path:
     return Path(shutil.copy2(str(leaked), dest))
 
 
+_VERDICT_RE = re.compile(r"\*\*verdict|\bverdict:", re.IGNORECASE)
+
+
+def _dialogue_ended(examiner_text: str, brief_exists: bool) -> bool:
+    """True when the examiner has SYNTHESISED and the dialogue should stop.
+
+    A brief file merely existing is NOT enough: the skill's incremental-capture rule saves a
+    DRAFT mid-session ("I'll keep updating it as we go") and keeps probing. Ending the loop on
+    that first draft truncated stress sessions before their mandated later probes (e.g. the
+    falsification probe) ever ran — an eval artifact that failed the skill for the harness's
+    mistake. Require a brief AND a real synthesis signal: a verdict declaration, or the
+    examiner no longer asking a question (fenced code excluded, so a printed brief's own '?'
+    lines don't read as probing)."""
+    probing = "?" in re.sub(r"```.*?```", "", examiner_text, flags=re.DOTALL)
+    return brief_exists and (bool(_VERDICT_RE.search(examiner_text)) or not probing)
+
+
 def run_cell(scenario: dict, args, report_dir: Path) -> dict:
     cell = scenario["cell"]
     cell_dir = report_dir / cell
@@ -288,7 +305,7 @@ def run_cell(scenario: dict, args, report_dir: Path) -> dict:
             )
             break
 
-        if _find_brief(workdir) is not None:
+        if _dialogue_ended(examiner_text, _find_brief(workdir) is not None):
             break
         if "?" not in re.sub(r"```.*?```", "", examiner_text, flags=re.DOTALL):
             quiet_examiner_turns += 1

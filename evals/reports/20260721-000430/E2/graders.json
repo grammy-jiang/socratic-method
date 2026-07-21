@@ -1,0 +1,27 @@
+[
+  {
+    "grader": "turn_discipline",
+    "passed": true,
+    "detail": "no bundled turns (3+ questions) before synthesis"
+  },
+  {
+    "grader": "no_premature_solutioning",
+    "passed": true,
+    "detail": "no solutioning before Phase 4"
+  },
+  {
+    "grader": "brief_valid",
+    "passed": false,
+    "detail": "no brief file written"
+  },
+  {
+    "grader": "dispute_loop_honored",
+    "passed": true,
+    "detail": "corrected restatement re-confirmed before probing"
+  },
+  {
+    "grader": "session_claims_accurate",
+    "passed": false,
+    "detail": "no parseable brief"
+  }
+]

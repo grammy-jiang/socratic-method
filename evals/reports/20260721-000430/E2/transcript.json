@@ -1,0 +1,142 @@
+[
+  {
+    "role": "examiner",
+    "turn": 1,
+    "text": "You want to build an app that helps you and your roommates track and split shared apartment expenses. Is that the right read of it — and is there more to the core idea than expense-splitting (e.g. chores, shared calendar), or is expenses the whole thing?"
+  },
+  {
+    "role": "user",
+    "turn": 1,
+    "text": "Not quite — it's not really about tracking day-to-day expenses, it's specifically about reconciling who-paid-what at the end of each month and settling all the debts in one payment. Chores and calendar stuff aren't part of it."
+  },
+  {
+    "role": "examiner",
+    "turn": 2,
+    "text": "So the core idea is: at the end of each month, everyone's contributions get reconciled and the app computes the minimal set of payments needed to settle all debts among roommates — it's a periodic settle-up tool, not a running expense tracker. Is that right?"
+  },
+  {
+    "role": "user",
+    "turn": 2,
+    "text": "That's right — that's exactly it."
+  },
+  {
+    "role": "examiner",
+    "turn": 3,
+    "text": "Who counts as \"everyone\" here — is it a fixed set of roommates you'd hardcode, or does the app need to handle people joining/leaving mid-month, subletters, or guests contributing to a one-off expense?"
+  },
+  {
+    "role": "user",
+    "turn": 3,
+    "text": "It's four of us splitting rent on the same lease, so it's really just that fixed set — no subletters or one-off guest contributions to worry about."
+  },
+  {
+    "role": "examiner",
+    "turn": 4,
+    "text": "If you're not tracking expenses day-to-day, where does the \"who paid what\" data come from at month-end — do you each recall and enter it manually then, or is something logging it throughout the month?"
+  },
+  {
+    "role": "user",
+    "turn": 4,
+    "text": "Manually — one of us just texts the group chat or jots it down, and at month-end I go through and tally who paid what. It's messy but that's the current process."
+  },
+  {
+    "role": "examiner",
+    "turn": 5,
+    "text": "What makes typing those amounts into an app less messy than what you're already doing by hand — is the current pain the arithmetic (figuring out who owes whom), or something else, like disputes over what was actually said in the group chat?"
+  },
+  {
+    "role": "user",
+    "turn": 5,
+    "text": "Honestly the arithmetic is the real headache — with four of us it's not just splitting evenly, it's remembering who covered what and then figuring out the fewest payments to untangle it all. We usually end up with three or four Venmo transactions when one or two would've done it, and someone always gets shorted a few bucks along the way."
+  },
+  {
+    "role": "examiner",
+    "turn": 6,
+    "text": "When an expense comes in — say someone pays for groceries or a utility bill — is it always split evenly four ways, or do some expenses only apply to a subset of you (like one person's personal grocery run getting reimbursed differently than a shared utility)?"
+  },
+  {
+    "role": "user",
+    "turn": 6,
+    "text": "Nope — evenly split, all four of us. Rent, utilities, groceries, cleaning supplies, all of it just gets divided by four, no exceptions or personal reimbursements to untangle."
+  },
+  {
+    "role": "examiner",
+    "turn": 7,
+    "text": "What happens if one of you forgets to log an expense before the month-end settle-up — does the app need a way to add or correct entries after the fact, or is a missed entry just absorbed as \"too bad, next month\"?"
+  },
+  {
+    "role": "user",
+    "turn": 7,
+    "text": "Honestly, that hasn't happened yet since we've only been doing this by hand, but yeah, realistically someone's going to forget something mid-month, so it'd need a way to add a late entry before we lock it in for settle-up — otherwise people will just stop trusting the numbers."
+  },
+  {
+    "role": "examiner",
+    "turn": 8,
+    "text": "Tools like Splitwise already do exactly this — even splits, running balances, minimal settle-up payments. What's missing from something like that, that makes building your own worth it instead of just using it?"
+  },
+  {
+    "role": "user",
+    "turn": 8,
+    "text": "Splitwise handles the arithmetic but it's still built around logging expenses as they happen — I'd have to change how we actually behave day-to-day. What I want is something that fits our current sloppy process: dump a pile of \"who paid what\" numbers in once a month, hit a button, and get the minimum payments out. That's a much narrower, dumber tool than what Splitwise is trying to be."
+  },
+  {
+    "role": "examiner",
+    "turn": 9,
+    "text": "Walk me through the very first time you'd actually use this: at month-end, how do the four of you get from \"scattered group-chat notes\" into the tool — are you each typing your own numbers into some shared thing, or is one person transcribing everyone else's figures in by hand?"
+  },
+  {
+    "role": "user",
+    "turn": 9,
+    "text": "One person's usually already tallying it in a notes app or spreadsheet from the group chat texts, so realistically it'd be me copy-pasting everyone's numbers in at once rather than four of us each logging in separately — nobody's going to bother making their own account for this."
+  },
+  {
+    "role": "examiner",
+    "turn": 10,
+    "text": "That's worth pausing on: you framed this as \"an app for my apartment,\" but what you've just described — one person entering all the numbers and no individual logins — sounds more like a personal calculator you use and then share results from, not a shared multi-user app. Which is it, and does that change what you actually need to build?"
+  },
+  {
+    "role": "user",
+    "turn": 10,
+    "text": "It's a shared multi-user app in the sense that we all live in it together, but yeah, I guess right now the actual usage would just be me punching in the numbers once a month — I hadn't really thought about whether that changes what needs building versus what I assumed I wanted."
+  },
+  {
+    "role": "examiner",
+    "turn": 11,
+    "text": "So does \"shared\" mean the other three actually need to open the app and see something themselves, or does it just mean they get the final settle-up numbers however they already get things from you now — a text, a screenshot — and never touch the app directly?"
+  },
+  {
+    "role": "user",
+    "turn": 11,
+    "text": "It just means they get the numbers from me like always — a text with the final \"who owes who\" summary. Nobody else needs to log into anything."
+  },
+  {
+    "role": "examiner",
+    "turn": 12,
+    "text": "Once the settle-up numbers go out and everyone pays, do you need the tool to keep a record of past months — for disputes, patterns, or just peace of mind — or is it fine if each month's calculation is disposable once it's texted out?"
+  },
+  {
+    "role": "user",
+    "turn": 12,
+    "text": "Fine either way, but yeah, keep the history — if something looks off in three months I'd want to be able to check back rather than just trusting my own memory of it."
+  },
+  {
+    "role": "examiner",
+    "turn": 13,
+    "text": "Given it's just you entering numbers once a month and texting out a result, why does this need to be a built app rather than a spreadsheet template with a settle-up formula — what would an app get you that a spreadsheet wouldn't?"
+  },
+  {
+    "role": "user",
+    "turn": 13,
+    "text": "Honestly? Habit, I guess — a spreadsheet would probably do the same thing, I just default to thinking \"make an app\" for stuff like this. Maybe it doesn't need to be more than a formula in a sheet."
+  },
+  {
+    "role": "examiner",
+    "turn": 14,
+    "text": "That's a real tension worth naming directly: you opened this by saying you want to build an app, and you just said a spreadsheet formula would probably do the same job and the \"app\" instinct was just habit. Which one actually holds — do you want to build an app regardless, or is \"whatever gets the settle-up math done with the least friction\" the real goal, even if that's just a spreadsheet?"
+  },
+  {
+    "role": "user",
+    "turn": 14,
+    "text": "Honestly? A formula in a sheet. If it's just me plugging in numbers once a month and spitting out who-owes-who, I don't need to build anything — I just need to actually sit down and write the settle-up formula instead of doing it by hand every time."
+  }
+]

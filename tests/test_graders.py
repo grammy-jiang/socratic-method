@@ -237,6 +237,22 @@ def test_falsification_probe_asked_pass_and_fail():
     assert "no falsification" in r["detail"]
 
 
+def test_falsification_probe_asked_catches_kill_condition_framing():
+    # Live-run miss this guards against: a disconfirming probe that asks for the failure
+    # threshold / kill trigger and never uses the word "wrong". All three must register.
+    for probe in (
+        "What would count as the experiment failing, versus just being slower than hoped?",
+        "What triggers pulling that switch — what are your kill criteria?",
+        "When would you walk away from this?",
+    ):
+        assert falsification_probe_asked([_t("examiner", 1, probe)], None, {})["passed"] is True, (
+            probe
+        )
+    # A pure consequence probe (no failure-threshold framing) must NOT be mistaken for one.
+    consequence = [_t("examiner", 1, "If this works exactly as hoped, what does it displace?")]
+    assert falsification_probe_asked(consequence, None, {})["passed"] is False
+
+
 def test_session_claims_accurate_pass_and_fail():
     six_q = [_t("examiner", i, "why?") for i in range(1, 7)]  # measured '?'-count = 6
     assert session_claims_accurate(six_q, GOLDEN, {})["passed"] is True  # golden claims 9
