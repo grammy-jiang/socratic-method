@@ -180,6 +180,16 @@ def validate_idea_brief(brief_path: str | Path) -> list[str]:
                         "refutation must quote the colliding answers exactly"
                     )
 
+    # `verdict_final: false` marks an in-progress autosave draft (the incremental-capture
+    # placeholder). It is schema-valid so interim saves don't crash, but it is NOT a final
+    # brief — report it so a downstream consumer trusting a passing `validate` can't mistake a
+    # mid-session stub for a verdict. `is False` is exact: absent (None) and true both pass.
+    if fm.get("verdict_final") is False:
+        errors.append(
+            "verdict_final: false — this is an in-progress interim draft, not a final brief "
+            "(the session had not reached a verdict when it was saved)"
+        )
+
     m = _FILENAME_RE.match(path.name)
     if m and isinstance(fm.get("idea"), str) and m.group("slug") != fm["idea"]:
         errors.append(

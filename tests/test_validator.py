@@ -169,6 +169,30 @@ def test_deeply_nested_yaml_reported_not_raised(tmp_path):
     assert any("nested too deeply" in e for e in errors), errors
 
 
+def test_verdict_final_false_is_reported_as_interim(tmp_path):
+    # An incremental-capture draft (verdict_final: false) is schema-valid but must be reported
+    # as an interim draft — so a consumer trusting a passing `validate` can't mistake a
+    # mid-session stub for a final verdict.
+    p = tmp_path / GOLDEN.name
+    p.write_text(
+        GOLDEN.read_text(encoding="utf-8").replace("verdict_final: true", "verdict_final: false"),
+        encoding="utf-8",
+    )
+    errors = validate_idea_brief(p)
+    assert any("verdict_final: false" in e and "interim" in e for e in errors), errors
+
+
+def test_verdict_final_absent_still_validates(tmp_path):
+    # Backward compatibility: a v1 brief with no verdict_final field is treated as final
+    # (absent = final), so existing briefs stay valid.
+    p = tmp_path / GOLDEN.name
+    p.write_text(
+        GOLDEN.read_text(encoding="utf-8").replace("verdict_final: true\n", ""),
+        encoding="utf-8",
+    )
+    assert validate_idea_brief(p) == []
+
+
 def test_yaml_aliases_are_rejected(tmp_path):
     # Aliases have no legitimate use in a brief and are a DoS vector: a nested-anchor graph
     # stays cheap at parse time (PyYAML shares references) but detonates downstream in

@@ -109,6 +109,7 @@ date: 2026-07-04
 mode: stress
 depth: standard
 verdict: sharpened
+verdict_final: true
 thesis_final: "A monthly 30-minute internal tech talk, seeded with 3 pre-committed speakers,
   to improve cross-team visibility — piloted for a quarter before any cadence increase."
 questions_asked: 9
