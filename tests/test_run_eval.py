@@ -94,6 +94,34 @@ def test_find_leaked_brief_skips_non_utf8_file(tmp_path, monkeypatch):
     assert run_eval._find_leaked_brief(0.0, scenario) is None
 
 
+def test_dialogue_ended_ignores_midsession_draft():
+    # The real truncation this guards against: the examiner saved an incremental-capture
+    # DRAFT and kept probing. The loop must NOT end here (it used to break on brief-exists,
+    # cutting stress sessions short before the mandated falsification probe ever ran).
+    draft = (
+        "Draft brief saved to notes/idea-briefs/x-20260720.md — I'll keep updating it as we "
+        "go. Next question: what would count as this failing?"
+    )
+    assert run_eval._dialogue_ended(draft, brief_exists=True) is False
+
+
+def test_dialogue_ended_on_verdict_synthesis():
+    # A real synthesis (verdict declared) ends the dialogue even when the brief's own open
+    # questions carry a '?'.
+    final = "Verdict: aporia. Brief saved.\n## Open questions (aporia)\n- who is it for?"
+    assert run_eval._dialogue_ended(final, brief_exists=True) is True
+
+
+def test_dialogue_ended_on_quiet_brief_without_verdict_word():
+    # Examiner wrote the brief and asks nothing further (e.g. the record-as-is path): done.
+    assert run_eval._dialogue_ended("The brief has been written and self-checked.", True) is True
+
+
+def test_dialogue_ended_false_without_brief():
+    # No brief yet: a plain probing turn never ends the dialogue.
+    assert run_eval._dialogue_ended("Who is this for, exactly?", brief_exists=False) is False
+
+
 def test_capture_leaked_brief_copies_and_preserves_original(tmp_path):
     # The leaked brief lives in the user's gitignored notes/; capturing it for the report
     # must COPY (leave the original in place), never move — a coincidental correlation
