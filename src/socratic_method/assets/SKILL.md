@@ -82,9 +82,9 @@ clear scope, an owner, measurable success criteria, no open questions — or the
 they don't want questioning, this is the "Not for" case: say so and stop rather than
 manufacture doubts. Offer what still helps (recording the idea as a brief as-is, or probing
 one specific aspect the user names), but do not run the elenchus by default. If the user
-accepts "record as-is", still emit the Phase 4 brief with `verdict: sharpened`,
+accepts "record as-is", still emit the Phase 4 brief with `verdict: accepted-as-is`,
 `questions_asked: 0`, and `types_used: []`, noting under "What changed under questioning"
-that nothing did.
+that nothing did — the idea was taken as given, not tested.
 
 ### Phase 2 — Elenchus (the questioning rounds)
 
@@ -186,11 +186,7 @@ surfaced it and asked which yields. Then state honestly which state was reached:
   assumption (load-bearing *and* doubtful) still live at verdict time must be carried as an
   explicit condition or gate in `thesis_final` itself, not only in the assumptions list ("…
   piloted for a quarter before committing"); a "sharpened" thesis that buries a live
-  load-bearing doubt should lean to aporia. (The lone
-  exception is Phase 1's "record as-is" path: an
-  already-precise idea the user declined to question is recorded honestly with
-  `questions_asked: 0` and the "nothing changed under questioning" note — that count and note
-  are the disclosure that it was accepted as specified, not battle-tested.)
+  load-bearing doubt should lean to aporia.
 - **Aporia:** a genuine unresolved hole remains. Name it plainly. Aporia is a *finding*, not a
   failure — "we don't yet know who this is for" saves more than a confident wrong answer. Do
   not paper over it with a proposed solution. Aporia also hides behind a "sharpened" label:
@@ -210,6 +206,11 @@ surfaced it and asked which yields. Then state honestly which state was reached:
   out of their own mouth, or not at all. State the refutation as the idea's own claims
   colliding ("the claim that X can't hold with the claim that Y"), never as the person
   conceding or yielding.
+- **Accepted as-is:** not an elenchus outcome — the Phase 1 scope-check result, when an
+  already-precise idea is recorded without questioning (`questions_asked: 0`, `types_used:
+  []`). This is *not* a claim the idea is sound; only that it was taken as given, never
+  stress-tested. It is its own verdict so a downstream consumer can tell it from a tested
+  `sharpened` by the verdict alone, with no second field to check.
 
 ### Phase 4 — Maieutic synthesis (the deliverable)
 
@@ -228,7 +229,7 @@ idea: <slug>            # slug only, no date — the filename adds -YYYYMMDD
 date: <YYYY-MM-DD>
 mode: stress            # stress | develop
 depth: standard         # quick | standard | deep
-verdict: sharpened      # sharpened | aporia | refuted
+verdict: sharpened      # sharpened | aporia | refuted | accepted-as-is (record-as-is path)
 verdict_final: true     # true = final brief; false = in-progress autosave draft (validate flags false)
 thesis_final: "One- or two-sentence refined statement"
 questions_asked: 9      # Phase 2 probing questions only (not the thesis ask, steelman
@@ -296,9 +297,9 @@ holds the colliding answers (two or more) exactly as the user said them and each
 the body, AND the user gave a substantive answer to "which yields?" that failed to resolve the
 collision (a stop signal is not that answer) — otherwise the honest verdict is aporia;
 `verdict: sharpened` ⇒ the body says how the thesis was actually tested and discloses any
-mode-preferred test that did not happen (or, on the "record as-is" path, `questions_asked: 0`
-with the "nothing changed" note) — a bare "survived" with the core claim never probed is aporia,
-not a clean sharpen. Before presenting the brief as final, set `verdict_final: true` and
+mode-preferred test that did not happen — a bare "survived" with the core claim never probed
+is aporia, not a clean sharpen (a `record as-is` acceptance is `verdict: accepted-as-is`, never
+`sharpened`); `verdict: accepted-as-is` ⇒ `questions_asked: 0` with the "nothing changed" note. Before presenting the brief as final, set `verdict_final: true` and
 confirm it is not still `false` (a leftover `false` from the interim draft means an unfinished
 brief is about to ship as a verdict — `validate` will reject it), and that any still-live
 `risky` assumption appears as an explicit gate in `thesis_final`, not only in the assumptions
@@ -320,11 +321,12 @@ worklist: work the `risky` ones first (load-bearing *and* doubtful), then `unval
 (needs checking but not obviously fragile); `validated` ones (evidence already seen) need no
 further work.
 
-Before treating any `sharpened` brief as a tested, buildable conclusion, a downstream consumer
-should confirm it is final: that `verdict_final` is not `false` (an interim draft —
-`socratic-method validate` rejects those), and that `questions_asked > 0` (a `sharpened` with
-`questions_asked: 0` is the "record as-is" path — accepted as specified, never battle-tested).
-Either check failing means the brief is not a verdict to build on yet.
+Before treating a brief as a tested, buildable conclusion, a downstream consumer should confirm
+two things it can read from the verdict directly: that `verdict` is `sharpened` — a
+tested-and-held thesis (`accepted-as-is` means recorded without questioning, `aporia`/`refuted`
+are open or collapsed) — and that `verdict_final` is not `false` (an interim draft —
+`socratic-method validate` rejects those). Either failing means the brief is not a verdict to
+build on yet.
 
 - **Before building or writing anything:** run this, then start the real work (plan mode, a
   draft, a spec) with the brief as the starting spec; open questions get verified first.

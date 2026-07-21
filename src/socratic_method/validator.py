@@ -190,6 +190,19 @@ def validate_idea_brief(brief_path: str | Path) -> list[str]:
             "(the session had not reached a verdict when it was saved)"
         )
 
+    # `accepted-as-is` is the record-as-is path: the idea was taken as given, never
+    # questioned, so it must report zero elenchus questions. This lets a downstream consumer
+    # trust the verdict alone (accepted-as-is vs a tested `sharpened`) without a second check.
+    if (
+        fm.get("verdict") == "accepted-as-is"
+        and isinstance(fm.get("questions_asked"), int)
+        and fm["questions_asked"] != 0
+    ):
+        errors.append(
+            "verdict: accepted-as-is requires questions_asked: 0 — it is the record-as-is path "
+            "(the idea was recorded as given, not questioned)"
+        )
+
     m = _FILENAME_RE.match(path.name)
     if m and isinstance(fm.get("idea"), str) and m.group("slug") != fm["idea"]:
         errors.append(

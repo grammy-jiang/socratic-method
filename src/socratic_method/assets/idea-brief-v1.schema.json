@@ -30,7 +30,7 @@
     },
     "mode": { "enum": ["stress", "develop"] },
     "depth": { "enum": ["quick", "standard", "deep"] },
-    "verdict": { "enum": ["sharpened", "aporia", "refuted"] },
+    "verdict": { "enum": ["sharpened", "aporia", "refuted", "accepted-as-is"] },
     "thesis_final": { "type": "string", "minLength": 1 },
     "assumptions": {
       "type": "array",

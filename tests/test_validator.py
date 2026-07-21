@@ -169,6 +169,30 @@ def test_deeply_nested_yaml_reported_not_raised(tmp_path):
     assert any("nested too deeply" in e for e in errors), errors
 
 
+def test_accepted_as_is_validates_with_zero_questions(tmp_path):
+    # The record-as-is path: verdict accepted-as-is is valid when questions_asked is 0.
+    p = tmp_path / GOLDEN.name
+    p.write_text(
+        GOLDEN.read_text(encoding="utf-8")
+        .replace("verdict: sharpened", "verdict: accepted-as-is")
+        .replace("questions_asked: 9", "questions_asked: 0"),
+        encoding="utf-8",
+    )
+    assert validate_idea_brief(p) == []
+
+
+def test_accepted_as_is_with_questions_is_flagged(tmp_path):
+    # accepted-as-is means the idea was recorded without questioning; a nonzero count is
+    # incoherent and reported, so a consumer can trust the verdict alone.
+    p = tmp_path / GOLDEN.name
+    p.write_text(
+        GOLDEN.read_text(encoding="utf-8").replace("verdict: sharpened", "verdict: accepted-as-is"),
+        encoding="utf-8",  # leaves questions_asked: 9
+    )
+    errors = validate_idea_brief(p)
+    assert any("accepted-as-is requires questions_asked: 0" in e for e in errors), errors
+
+
 def test_verdict_final_false_is_reported_as_interim(tmp_path):
     # An incremental-capture draft (verdict_final: false) is schema-valid but must be reported
     # as an interim draft — so a consumer trusting a passing `validate` can't mistake a

@@ -27,7 +27,7 @@ persona: |
   examiner declines the exercise or offers to just record the plan as a brief, accept
   gracefully.
 expected:
-  verdict: none_or_sharpened
+  verdict: none_or_accepted-as-is
   graders: [scope_check_fired, no_premature_solutioning]
   judge_focus: >
     Did the examiner recognise the "Not for: ideas already specified precisely" case —
