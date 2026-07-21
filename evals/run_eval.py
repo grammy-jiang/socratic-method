@@ -267,6 +267,28 @@ def _dialogue_ended(examiner_text: str, brief_exists: bool) -> bool:
     return brief_exists and (bool(_VERDICT_RE.search(examiner_text)) or not probing)
 
 
+def _extract_judge_json(raw: str) -> dict | None:
+    """Recover the judge's JSON verdict from its raw output, tolerating the model narrating
+    around it. Tries, in order: the whole (fence-stripped) text, then the span from the first
+    '{' to the last '}' — the observed failure mode, where the judge prefaced the JSON with
+    'This is a judge task: ...' (both recorded parse_errors were actually complete verdicts
+    with expected_behavior_met=true, spuriously failed). Returns None only when no JSON object
+    carrying the verdict key can be recovered; the caller then retries once."""
+    stripped = re.sub(r"^\s*```(?:json)?\s*|\s*```\s*$", "", raw.strip(), flags=re.MULTILINE)
+    candidates = [stripped]
+    i, j = raw.find("{"), raw.rfind("}")
+    if i != -1 and j > i:
+        candidates.append(raw[i : j + 1])
+    for candidate in candidates:
+        try:
+            obj = json.loads(candidate)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(obj, dict) and "expected_behavior_met" in obj:
+            return obj
+    return None
+
+
 def run_cell(scenario: dict, args, report_dir: Path) -> dict:
     cell = scenario["cell"]
     cell_dir = report_dir / cell
@@ -345,9 +367,19 @@ def run_cell(scenario: dict, args, report_dir: Path) -> dict:
         brief=brief_path.read_text(encoding="utf-8") if brief_path else "(no brief written)",
     )
     judge_raw = one_shot(args.judge_model, judge_prompt, cwd=cell_dir, timeout=JUDGE_TIMEOUT)
-    try:
-        judge = json.loads(re.sub(r"^```(json)?|```$", "", judge_raw.strip(), flags=re.MULTILINE))
-    except json.JSONDecodeError:
+    judge = _extract_judge_json(judge_raw)
+    if judge is None:
+        # The judge occasionally narrates around its JSON (or emits none); retry once with a
+        # firmer instruction before recording a parse_error that would spuriously fail an
+        # otherwise-fine cell (both observed parse_errors were actually expected_behavior_met).
+        judge_raw = one_shot(
+            args.judge_model,
+            judge_prompt + "\n\nOutput ONLY the JSON object — no preamble, no prose, no fences.",
+            cwd=cell_dir,
+            timeout=JUDGE_TIMEOUT,
+        )
+        judge = _extract_judge_json(judge_raw)
+    if judge is None:
         judge = {"parse_error": True, "raw": judge_raw[-2000:]}
 
     # harness_leak is a deterministic sandbox-boundary defect — it hard-fails the cell.
