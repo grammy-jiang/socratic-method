@@ -155,11 +155,12 @@ the end. Keep every interim save schema-valid without inventing content: use `ve
 with `open_questions: []` until a genuine gap has actually surfaced, and switch to `verdict:
 aporia` only once `open_questions` is non-empty — never seed a placeholder question (a stub is
 fabricated content and can leak into a downstream hand-off). This interim `sharpened` is a
-**placeholder, not a verdict** — mark it as one by setting `next_step` to the exact sentinel
-`"SESSION IN PROGRESS — not a final brief"` (verbatim, so a downstream reader can tell an
-unfinished draft from a real verdict), and replace it with the true next step only in Phase 4.
-An interrupted or abandoned session must still leave a usable partial brief — one whose
-sentinel `next_step` makes plain it never reached a verdict.
+**placeholder, not a verdict** — mark every interim save `verdict_final: false` (a plain
+`next_step` status line such as `"session in progress — no next step yet"` is fine), and set
+`verdict_final: true` only when Phase 4 produces the real verdict. `socratic-method validate`
+reports any `verdict_final: false` brief as an interim draft, so a mid-session stub can never
+be mistaken for a final one. An interrupted or abandoned session must still leave a usable
+partial brief — one that stays `verdict_final: false` so it reads honestly as unfinished.
 
 ### Phase 3 — Verdict checkpoint
 
@@ -228,6 +229,7 @@ date: <YYYY-MM-DD>
 mode: stress            # stress | develop
 depth: standard         # quick | standard | deep
 verdict: sharpened      # sharpened | aporia | refuted
+verdict_final: true     # true = final brief; false = in-progress autosave draft (validate flags false)
 thesis_final: "One- or two-sentence refined statement"
 questions_asked: 9      # Phase 2 probing questions only (not the thesis ask, steelman
 #                       # confirmations, or clarifying sub-questions of the same probe);
@@ -288,10 +290,11 @@ collision (a stop signal is not that answer) — otherwise the honest verdict is
 `verdict: sharpened` ⇒ the body says how the thesis was actually tested and discloses any
 mode-preferred test that did not happen (or, on the "record as-is" path, `questions_asked: 0`
 with the "nothing changed" note) — a bare "survived" with the core claim never probed is aporia,
-not a clean sharpen. Before presenting the brief as final, confirm `next_step` no longer holds
-the "SESSION IN PROGRESS — not a final brief" sentinel (a stale sentinel means an unfinished
-draft is about to ship as a verdict), and that any still-live `risky` assumption appears as an
-explicit gate in `thesis_final`, not only in the assumptions list. Fix mismatches before printing. This read-back is only the inner loop — the
+not a clean sharpen. Before presenting the brief as final, set `verdict_final: true` and
+confirm it is not still `false` (a leftover `false` from the interim draft means an unfinished
+brief is about to ship as a verdict — `validate` will reject it), and that any still-live
+`risky` assumption appears as an explicit gate in `thesis_final`, not only in the assumptions
+list. Fix mismatches before printing. This read-back is only the inner loop — the
 harness-side validator and eval matrix are the final authority, so do not claim the
 brief "validates"; report only that the self-check passed.
 
@@ -310,10 +313,10 @@ worklist: work the `risky` ones first (load-bearing *and* doubtful), then `unval
 further work.
 
 Before treating any `sharpened` brief as a tested, buildable conclusion, a downstream consumer
-should confirm it is final: that `next_step` is **not** the `"SESSION IN PROGRESS — not a
-final brief"` sentinel (an interrupted draft, not a verdict), and that `questions_asked > 0`
-(a `sharpened` with `questions_asked: 0` is the "record as-is" path — accepted as specified,
-never battle-tested). Either check failing means the brief is not a verdict to build on yet.
+should confirm it is final: that `verdict_final` is not `false` (an interim draft —
+`socratic-method validate` rejects those), and that `questions_asked > 0` (a `sharpened` with
+`questions_asked: 0` is the "record as-is" path — accepted as specified, never battle-tested).
+Either check failing means the brief is not a verdict to build on yet.
 
 - **Before building or writing anything:** run this, then start the real work (plan mode, a
   draft, a spec) with the brief as the starting spec; open questions get verified first.

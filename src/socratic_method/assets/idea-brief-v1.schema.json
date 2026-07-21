@@ -78,6 +78,10 @@
       "minItems": 2,
       "items": { "type": "string", "minLength": 1 },
       "description": "verdict=refuted only: the two-or-more user answers that collided, quoted verbatim."
+    },
+    "verdict_final": {
+      "type": "boolean",
+      "description": "false = an in-progress autosave draft, not a final verdict; absent or true = final. `socratic-method validate` reports a brief with verdict_final:false as an interim draft, so a downstream consumer trusting a passing validate cannot mistake a mid-session stub for a final one."
     }
   },
   "additionalProperties": false,
