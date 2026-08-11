@@ -259,10 +259,19 @@ python evals/run_smoke.py --model claude=sonnet   # override one platform's mode
 python evals/run_smoke.py                     # every platform whose CLI is on PATH
 ```
 
-Needs each platform's CLI authenticated; 2 headless calls per platform. A probe that never
-reached the model is reported as `ERROR`, not `PASS` — an ungraded probe leaves the
-platform unverified, and calling that success is the fabrication mode this project exists
-to prevent. Like the rest of `evals/`, it must never run in CI.
+Needs each platform's CLI authenticated; 2 headless calls per platform. Probe outcomes:
+
+| | |
+|---|---|
+| `PASS` / `FAIL` | the probe ran and the contract held / did not |
+| `ERROR` | the CLI never reached the model (spend limit, auth) — **not** a pass; the platform is simply unverified, and calling that success is the fabrication mode this project exists to prevent |
+| `XFAIL` | a measured, upstream-reported breakage listed in `KNOWN_BREAKAGE` — does not fail the run |
+| `XPASS` | a known breakage that now passes — **does** fail the run, because the docs describing it have gone stale and must be removed |
+
+Today one entry is expected-broken: Copilot CLI discovery, tracked in
+[#18](https://github.com/grammy-jiang/socratic-method/issues/18) and
+[github/copilot-cli#4438](https://github.com/github/copilot-cli/issues/4438). Like the rest
+of `evals/`, this must never run in CI.
 
 It does **not** grade questioning behavior — no turn discipline, no stop signal, no verdict
 honesty. Those need a scripted multi-turn simulator and stay in `run_eval.py`.

@@ -136,8 +136,11 @@ Two tiers that measure different things — do not conflate them:
 - `run_smoke.py` is the **contract** tier across all three platforms: an explicit
   invocation must load `SKILL.md` from the installer's own directory, and a
   description-matching prompt must not auto-invoke it. It grades no questioning behavior.
-  Probes are three-state — a run that never reached the model (spend limit, auth) is
-  `ERROR`, never `PASS`, and `ERROR` fails the exit code. `_install()` git-inits the
+  Probe outcomes are five-state: `PASS`/`FAIL`, plus `ERROR` (never reached the model —
+  spend limit, auth; never `PASS`), `XFAIL` (a measured breakage listed in
+  `KNOWN_BREAKAGE`, does not fail the run) and `XPASS` (a known breakage that healed —
+  **fails** the run, because the docs describing it are now stale and must be deleted in
+  the same pass). Add to `KNOWN_BREAKAGE` only with an upstream issue link. `_install()` git-inits the
   sandbox because Codex resolves its REPO skill scopes against a repository root, and it
   copies the working tree (like `run_eval.py`) so uncommitted asset edits are tested.
   Probing "is the skill in your list" does NOT work — a manual-only skill is deliberately

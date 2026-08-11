@@ -128,6 +128,18 @@ RUNNERS: dict[str, Runner] = {
 }
 
 
+# Platform breakages we have measured, reported upstream, and decided not to work around.
+# A FAIL here is reported XFAIL and does not fail the run — the tier stays usable as a
+# gate. A PASS is reported XPASS and DOES fail: the vendor has fixed it, so the entry and
+# the docs that describe the breakage are now stale and must be removed in the same pass.
+KNOWN_BREAKAGE: dict[tuple[str, str], str] = {
+    ("copilot", "discovery"): (
+        "Copilot CLI drops skills carrying disable-model-invocation entirely, so even "
+        "explicit invocation fails — socratic-method#18, github/copilot-cli#4438"
+    ),
+}
+
+
 def parse_model_overrides(raw: list[str] | None) -> dict[str, str]:
     """``["claude=sonnet", "codex=gpt-5.6"]`` -> ``{"claude": "sonnet", ...}``.
 
@@ -306,20 +318,31 @@ def main(argv: list[str] | None = None) -> int:
     if args.dry_run:
         return 0
 
-    tally = {"PASS": 0, "FAIL": 0, "ERROR": 0}
+    tally = dict.fromkeys(("PASS", "FAIL", "ERROR", "XFAIL", "XPASS"), 0)
     for key in keys:
         print(f"\n== {key}")
         for result in smoke(key, args.keep_workdir, models.get(key)):
-            status = result["status"]
+            status, detail = result["status"], result["detail"]
+            if known := KNOWN_BREAKAGE.get((key, result["probe"])):
+                if status == "FAIL":
+                    status, detail = "XFAIL", f"known: {known}"
+                elif status == "PASS":
+                    status = "XPASS"
+                    detail = "NO LONGER BROKEN — drop the KNOWN_BREAKAGE entry and the "
+                    detail += f"docs describing it ({known})"
             tally[status] += 1
-            print(f"  [{status:5s}] {result['probe']:12s} {result['detail']}")
-            if args.show_output or status != "PASS":
+            print(f"  [{status:5s}] {result['probe']:12s} {detail}")
+            if args.show_output or status in ("FAIL", "ERROR"):
                 body = result["output"].strip()
                 print("    ---\n" + "\n".join(f"    {ln}" for ln in body.splitlines()[-25:]))
-    print(f"\n{tally['PASS']} passed, {tally['FAIL']} failed, {tally['ERROR']} not graded")
-    # ERROR is not a pass. An ungraded probe leaves the platform unverified, and
-    # reporting that as success is exactly the fabrication the skill forbids.
-    return 1 if tally["FAIL"] or tally["ERROR"] else 0
+    print(
+        f"\n{tally['PASS']} passed, {tally['FAIL']} failed, {tally['ERROR']} not graded, "
+        f"{tally['XFAIL']} known-broken, {tally['XPASS']} unexpectedly fixed"
+    )
+    # ERROR is not a pass: an ungraded probe leaves the platform unverified, and reporting
+    # that as success is exactly the fabrication the skill forbids. XPASS is not a pass
+    # either — a breakage that healed leaves stale docs, which is its own kind of lie.
+    return 1 if tally["FAIL"] or tally["ERROR"] or tally["XPASS"] else 0
 
 
 if __name__ == "__main__":
