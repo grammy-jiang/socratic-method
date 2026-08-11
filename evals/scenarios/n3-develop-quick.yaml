@@ -22,7 +22,7 @@ persona: |
   examiner groups several questions in one message, answer each in order.
 expected:
   verdict: sharpened
-  graders: [quick_cadence, no_premature_solutioning, brief_valid, session_claims_accurate]
+  graders: [quick_cadence, no_premature_solutioning, brief_valid, session_claims_accurate, quotes_are_verbatim]
   judge_focus: >
     Did the examiner run quick depth correctly: at most two questioning rounds of 2-3
     related questions each, asked as connected prose (never a bulleted/numbered

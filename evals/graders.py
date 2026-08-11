@@ -540,6 +540,96 @@ def falsification_probe_asked(transcript, brief_path, scenario):
     }
 
 
+_ELLIPSIS_RE = re.compile(r"\s*(?:\.{3,}|…|\.\s\.\s\.)\s*")
+# Trailing/leading punctuation a writer adds or drops around a quote without changing
+# what was said; stripping it keeps the check about words, not typography.
+_EDGE_PUNCT = " \t.,;:!?—–-\"'“”‘’"
+
+
+def _match_target(text: str) -> str:
+    return _normalize_quote(text)
+
+
+def _quote_is_reproducible(span: str, messages: list[str]) -> bool:
+    """Does one quoted span appear, in order, inside a SINGLE transcript message?
+
+    Fragments split on an ellipsis must all land in the same message and in order. That
+    is the whole point: an ellipsis may elide *within* one utterance, and may never weld
+    two separate ones into speech that sounds continuous.
+    """
+    fragments = [f.strip(_EDGE_PUNCT) for f in _ELLIPSIS_RE.split(span)]
+    fragments = [f for f in fragments if len(f) >= 8]  # ignore stubs left by edge-stripping
+    if not fragments:
+        return True
+    for msg in messages:
+        cursor, ok = 0, True
+        for frag in fragments:
+            found = msg.find(frag, cursor)
+            if found < 0:
+                ok = False
+                break
+            cursor = found + len(frag)
+        if ok:
+            return True
+    return False
+
+
+def quotes_are_verbatim(transcript, brief_path, scenario):
+    """Every quotation in the brief body must be reproducible from one message.
+
+    The skill's promise is that it never puts words in the user's mouth, but only
+    ``colliding_claims`` was ever checked (refutation_mechanics, and only when the verdict
+    is refuted). Body quotes were unguarded, and one shipped wrong: an O1 brief rendered
+    "I'm not re-litigating it... record as-is" as a single utterance, splicing two separate
+    user turns behind the ellipsis and dropping a word from the second. Every grader passed
+    and the judge scored ``fabrication: false`` because the substance was accurate.
+
+    Only the BODY is scanned, never the raw frontmatter: YAML double-quotes a scalar
+    (``thesis_final: "..."``) and that is syntax, not attributed speech. ``colliding_claims``
+    is pulled from the parsed frontmatter instead, where it *is* attributed by contract.
+
+    A span may match any single message, examiner or user — a brief legitimately quotes the
+    examiner's own restatement back. The failure this catches is a quote that exists in no
+    single utterance at all.
+
+    Known, deliberate boundary: attributions nested inside other frontmatter scalars (the
+    golden fixture's ``constraints`` entry carries one) are not scanned. Reaching them means
+    quote-hunting inside parsed YAML strings, where an apostrophe in ``it's`` is
+    indistinguishable from a closing single quote — more false positives than the narrow
+    coverage is worth. The body is where the defect appeared.
+    """
+    path = Path(brief_path) if brief_path else None
+    if path is None or not path.is_file():
+        # Vacuously true, not a failure: O1 may legitimately decline without writing a
+        # brief, and brief_valid is the grader that owns "a brief should exist".
+        return {
+            "grader": "quotes_are_verbatim",
+            "passed": True,
+            "detail": "no brief written; no quotations to check",
+        }
+
+    _, body = split_frontmatter(path.read_text(encoding="utf-8-sig"))
+    spans = _quoted_spans(body)
+    fm = _load_frontmatter(path) or {}
+    spans += [_normalize_quote(c) for c in (fm.get("colliding_claims") or []) if isinstance(c, str)]
+
+    messages = [_match_target(m["text"]) for m in transcript]
+    unreproducible = [s for s in spans if not _quote_is_reproducible(s, messages)]
+    if unreproducible:
+        shown = "; ".join(f'"{s[:70]}"' for s in unreproducible[:3])
+        return {
+            "grader": "quotes_are_verbatim",
+            "passed": False,
+            "detail": f"{len(unreproducible)} quote(s) not reproducible from any single "
+            f"message (spliced or misquoted): {shown}",
+        }
+    return {
+        "grader": "quotes_are_verbatim",
+        "passed": True,
+        "detail": f"{len(spans)} quoted span(s), each verbatim within one message",
+    }
+
+
 GRADERS = {
     fn.__name__: fn
     for fn in (
@@ -554,6 +644,7 @@ GRADERS = {
         scope_check_fired,
         session_claims_accurate,
         falsification_probe_asked,
+        quotes_are_verbatim,
     )
 }
 

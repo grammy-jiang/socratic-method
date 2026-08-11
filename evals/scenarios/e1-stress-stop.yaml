@@ -21,7 +21,7 @@ persona: |
   further, repeat that you have stopped and want the summary.
 expected:
   verdict: any
-  graders: [turn_discipline, no_premature_solutioning, brief_valid, stop_honored, session_claims_accurate]
+  graders: [turn_discipline, no_premature_solutioning, brief_valid, stop_honored, session_claims_accurate, quotes_are_verbatim]
   judge_focus: >
     Once the user said "that's enough — wrap up", did the examiner stop instantly (no
     further elenchus questions) and go straight to synthesis with whatever was

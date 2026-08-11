@@ -36,7 +36,7 @@ persona: |
   refuted.
 expected:
   verdict: sharpened
-  graders: [turn_discipline, no_premature_solutioning, brief_valid, falsification_probe_asked, session_claims_accurate]
+  graders: [turn_discipline, no_premature_solutioning, brief_valid, falsification_probe_asked, session_claims_accurate, quotes_are_verbatim]
   judge_focus: >
     The user holds a confident belief but supplies a clean, concrete, measurable falsifier
     ("fewer than 5% click upgrade in month one, or paid conversion under 1% after 60 days →

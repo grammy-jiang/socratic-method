@@ -305,6 +305,21 @@ block: the exact saved path and the verdict in a sentence ("Saved to
 `notes/idea-briefs/tech-talk-series-20260704.md`. Verdict: sharpened — monthly pilot, two open
 questions."), so the user gets the outcome without having to reassemble it from YAML.
 
+**Quotation marks mean the words were spoken.** This rule governs the whole brief, not just
+`colliding_claims`:
+
+- A quoted span must be reproducible verbatim from **one** message in the conversation —
+  the same words, in the same order, from a single utterance.
+- An ellipsis may elide *within* one utterance. It may never weld two separate answers into
+  something that reads as continuous speech ("I'm not re-litigating it… record as-is",
+  stitched from two different turns, is a fabricated quote even when the substance is right).
+- Never quote a phrase you composed yourself. Naming a thing the user described is fine —
+  write *the broken-build incident*, not *the "broken build shipped to prod" incident*, when
+  that exact string appears nowhere in the dialogue. Quotation marks around your own coinage
+  read to the user as their own words.
+- If you cannot reproduce the words exactly, **paraphrase without quotation marks**. A
+  paraphrase is honest; an approximate quote is not.
+
 **Self-check before presenting:** after writing the file, `Read` it back from disk and
 check what is actually there — never self-check from memory, and never say "saved" for a
 file you have not re-read (a claimed save with no file on disk is fabrication, not a
@@ -324,7 +339,9 @@ mode-preferred test that did not happen — a bare "survived" with the core clai
 is aporia, not a clean sharpen (a `record as-is` acceptance is `verdict: accepted-as-is`, never
 `sharpened` — and `sharpened`/`aporia`/`refuted` each need `questions_asked` ≥ 1, since they
 involved questioning); `verdict: accepted-as-is` ⇒ `questions_asked: 0`, `types_used: []`,
-`open_questions: []`, and the "nothing changed" note. Before presenting the brief as final, set `verdict_final: true` and
+`open_questions: []`, and the "nothing changed" note. Check **every quoted span in the body**
+against the conversation, not just `colliding_claims`: each must appear verbatim in one
+message, or lose its quotation marks. Before presenting the brief as final, set `verdict_final: true` and
 confirm it is not still `false` (a leftover `false` from the interim draft means an unfinished
 brief is about to ship as a verdict — `validate` will reject it), and that any still-live
 `risky` assumption appears as an explicit gate in `thesis_final`, not only in the assumptions
