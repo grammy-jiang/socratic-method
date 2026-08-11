@@ -58,12 +58,13 @@ socratic-method status        # verify what landed where before claiming success
 
 Special properties to know before acting:
 
-- **Manual-invocation only** (`/socratic-method …` in Claude Code and Copilot,
-  `$socratic-method` in Codex), and it costs zero context tokens until invoked. This is
-  enforced where the platform supports it — Claude Code, Codex, and Copilot's VS Code/CLI
-  surfaces. **One known gap:** GitHub's *cloud* Copilot coding agent documents no user-only
-  mechanism, so it may still pick the skill on its own. On the enforced surfaces, if it
-  seems inactive that is by design — invoke it explicitly rather than rephrasing to bait it.
+- **Meant to be invoked by hand, never auto-triggered** (`/socratic-method …` in Claude
+  Code and Copilot, `$socratic-method` in Codex); it costs zero context tokens until
+  invoked. If it seems inactive, that is by design — invoke it explicitly rather than
+  rephrasing the prompt to bait it. **How that is enforced differs per platform, and it
+  is not airtight on Copilot** — see
+  [How manual-only is enforced](#how-manual-only-is-enforced-per-platform) before relying
+  on it.
 - **Output contract:** a session must end with a brief at
   `notes/idea-briefs/<slug>-YYYYMMDD.md` that passes
   `socratic-method validate <file>` (exit 0 = valid; exit 1 prints `ERROR:` lines).
@@ -170,24 +171,47 @@ registry (`installer.py`) — if a platform moves its skills directory, the fix 
 
 ## Use the skill
 
-The skill is **manual-invocation-only**: it never auto-triggers on phrasing, and it costs
-zero context tokens until you call it. Invoke it explicitly:
+The skill is **manual-invocation-only**: it should never auto-trigger on phrasing, and it
+costs zero context tokens until you call it. Invoke it explicitly:
 
 ```text
-/socratic-method <idea> [--mode stress|develop] [--depth quick|standard|deep]   # Claude Code, Copilot
-$socratic-method <idea> ...                                                     # Codex ($ mention)
+/socratic-method <idea> [--mode stress|develop] [--depth quick|standard|deep]   # Claude Code
+Use the /socratic-method skill to <idea>, --mode stress --depth deep            # GitHub Copilot
+$socratic-method <idea> --mode stress --depth deep                              # Codex ($ mention)
 ```
+
+`--mode` and `--depth` are **not** parsed by any CLI — no agent has a flag parser for skill
+arguments. They are conventions the model reads out of your prompt text, so any phrasing
+that names them works. Copilot CLI also has `/skills list|info|reload` and a terminal-side
+`copilot skill` subcommand; Codex has a `/skills` picker.
 
 The session ends with the brief saved to `notes/idea-briefs/<slug>-YYYYMMDD.md`. A full
 worked session — steelman restatement, contradiction-surfacing by verbatim quotation, a
 refutation-vs-aporia contrast, and the resulting `idea-brief-v1` file — is in
 [references/example-session.md](src/socratic_method/assets/references/example-session.md).
 
-This is enforced by `disable-model-invocation: true` in the skill frontmatter (Claude
-Code; Copilot VS Code agent mode and CLI) and by the `agents/openai.yaml` sidecar with
-`policy.allow_implicit_invocation: false` (Codex ignores the frontmatter key). One known
-gap: GitHub's cloud coding agent documents no user-only mechanism, so it may still pick
-the skill autonomously.
+### How manual-only is enforced, per platform
+
+Support is **not uniform**, and one platform has no mechanism at all. Verified
+2026-08-11 against the sources linked below:
+
+| Platform | Mechanism | Status |
+|---|---|---|
+| Claude Code | `disable-model-invocation: true` | Documented — [origin of the field](https://code.claude.com/docs/en/skills) |
+| VS Code (Copilot) | `disable-model-invocation` + `user-invocable: true` | Supported per the [cross-agent survey](https://gist.github.com/zeke/0f654737ec01b20e9bf85d3cc0bc1c14); absent from [VS Code's own docs](https://code.visualstudio.com/docs/agent-customization/agent-skills) |
+| Copilot CLI | `disable-model-invocation` | **Unverified.** [GitHub's docs](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills) document only `name`, `description`, `license`, `allowed-tools`, and say Copilot decides when to use a skill from its description. Use `/skills` to toggle the skill off if you need a hard guarantee |
+| Copilot cloud agent | none | **Known gap.** [The docs](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills) describe no user-only mechanism, so it may still pick the skill autonomously |
+| OpenAI Codex | `agents/openai.yaml` → `policy.allow_implicit_invocation: false` | Documented — [Codex skills](https://developers.openai.com/codex/skills); "explicit `$skill` invocation still works" |
+
+`disable-model-invocation` is not part of the [agentskills.io](https://agentskills.io) open
+spec (which defines `name`, `description`, and optionally `license`, `compatibility`,
+`metadata`, `allowed-tools`). It is a client extension several agents converged on — which
+is why the guarantee has to be stated per platform rather than claimed once.
+
+Note also that `allowed-tools` is a *restriction* on Claude Code but a **pre-approval**
+list on Copilot, where listed tools skip the confirmation prompt. The shipped value is
+`AskUserQuestion, Read, Write`; a test in the package repository pins that it can never
+grow a shell/bash-family tool.
 
 ## Validate a brief
 

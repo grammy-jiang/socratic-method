@@ -1,14 +1,21 @@
-"""Invocation policy of the shipped skill: manual-only on every platform.
+"""Cross-platform contract of the shipped skill asset.
 
-The policy intentionally lives in two places that must stay in sync:
-SKILL.md frontmatter (``disable-model-invocation`` — Claude Code, Copilot) and
-the ``agents/openai.yaml`` sidecar (``policy.allow_implicit_invocation`` — Codex,
-which ignores the frontmatter key).
+Two things are pinned here because they are stated in more than one place and
+mean different things per platform:
+
+- Invocation policy — manual-only everywhere. It lives in SKILL.md frontmatter
+  (``disable-model-invocation`` — Claude Code, VS Code Copilot) and in the
+  ``agents/openai.yaml`` sidecar (``policy.allow_implicit_invocation`` — Codex,
+  which ignores the frontmatter key).
+- ``allowed-tools`` — a restriction on Claude Code but a *pre-approval* list on
+  GitHub Copilot, where listed tools skip the confirmation prompt. The value is
+  safe today; the durable rail is that it can never grow a command-execution tool.
 """
 
 from importlib.resources import files
 from pathlib import Path
 
+import pytest
 import yaml
 
 from socratic_method.installer import MANAGED_FILES
@@ -18,11 +25,45 @@ def _asset(rel: str) -> str:
     return files("socratic_method").joinpath(f"assets/{rel}").read_text(encoding="utf-8")
 
 
-def test_skill_frontmatter_disables_model_invocation():
+def _frontmatter() -> dict:
     text = _asset("SKILL.md")
     assert text.startswith("---\n")
-    frontmatter = yaml.safe_load(text.split("\n---", 1)[0].removeprefix("---\n"))
-    assert frontmatter["disable-model-invocation"] is True
+    return yaml.safe_load(text.split("\n---", 1)[0].removeprefix("---\n"))
+
+
+def test_skill_frontmatter_disables_model_invocation():
+    assert _frontmatter()["disable-model-invocation"] is True
+
+
+def test_skill_frontmatter_stays_user_invocable():
+    # VS Code Copilot pairs disable-model-invocation with user-invocable (default
+    # true). Stating it explicitly keeps the 2x2 on "on-demand only" rather than
+    # relying on a default; flipping it to false would disable the skill outright.
+    assert _frontmatter()["user-invocable"] is True
+
+
+# Names any of the three platforms could resolve to running a command. Copilot's
+# own docs warn that pre-approving these lets a prompt injection execute anything.
+_COMMAND_EXECUTION_TOOLS = frozenset(
+    {"shell", "bash", "sh", "zsh", "powershell", "pwsh", "terminal", "run", "execute"}
+)
+
+
+def test_allowed_tools_never_pre_approves_command_execution():
+    raw = _frontmatter().get("allowed-tools", "")
+    listed = raw if isinstance(raw, list) else raw.split(",")
+    names = {t.strip().casefold() for t in listed if t.strip()}
+    offenders = names & _COMMAND_EXECUTION_TOOLS
+    assert not offenders, (
+        f"allowed-tools pre-approves command execution on GitHub Copilot: {sorted(offenders)}"
+    )
+
+
+@pytest.mark.parametrize("tool", ["Read", "Write"])
+def test_allowed_tools_keeps_the_tools_the_skill_actually_needs(tool):
+    # Phase 4 writes the brief and reads it back; losing either would break the
+    # read-back-before-claiming-saved rail on Claude Code, where the list restricts.
+    assert tool in _frontmatter()["allowed-tools"]
 
 
 def test_codex_sidecar_disables_implicit_invocation():
