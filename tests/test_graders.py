@@ -15,6 +15,7 @@ from graders import (
     falsification_probe_asked,
     no_premature_solutioning,
     quick_cadence,
+    quotes_are_verbatim,
     refutation_mechanics,
     run_graders,
     scope_check_fired,
@@ -344,3 +345,85 @@ def test_stop_honored_flags_question_before_unfenced_brief_body():
     # Pin the COUNT: in_brief_body must suppress the brief's own "who is it for?" so only
     # the genuine pre-header question counts (reverting in_brief_body → "2 question(s)").
     assert "asked 1 question(s) after stop" in r["detail"]
+
+
+# --- quotes_are_verbatim ----------------------------------------------------------
+
+_Q_TRANSCRIPT = [
+    _t("user", 1, "The plan is signed off and I'm not re-litigating it."),
+    _t("user", 2, "If you want, record it as-is and we're done."),
+    _t("examiner", 3, "Understood — I'll record it as-is."),
+]
+
+
+def _quoting_brief(path, body):
+    # thesis_final is deliberately YAML-double-quoted: that is syntax, not attributed
+    # speech, and scanning raw frontmatter would fail every brief ever written.
+    path.write_text(
+        "---\nschema: idea-brief-v1\nverdict: sharpened\n"
+        'thesis_final: "a yaml scalar, not a quotation"\n'
+        f"---\n{body}\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def test_quotes_are_verbatim_accepts_a_real_quote(tmp_path):
+    b = _quoting_brief(tmp_path / "a-20260101.md", 'They said "the plan is signed off".')
+    assert quotes_are_verbatim(_Q_TRANSCRIPT, b, {})["passed"] is True
+
+
+def test_quotes_are_verbatim_rejects_a_splice_across_turns(tmp_path):
+    # The real defect from evals/reports/20260811-203833/O1: an ellipsis welding two
+    # separate user turns into speech that reads as one continuous utterance.
+    b = _quoting_brief(
+        tmp_path / "b-20260101.md", 'They said "I\'m not re-litigating it... record as-is".'
+    )
+    r = quotes_are_verbatim(_Q_TRANSCRIPT, b, {})
+    assert r["passed"] is False
+    assert "spliced or misquoted" in r["detail"]
+
+
+def test_quotes_are_verbatim_allows_elision_within_one_turn(tmp_path):
+    # An ellipsis may elide inside a single utterance — that is ordinary quoting.
+    b = _quoting_brief(
+        tmp_path / "c-20260101.md", 'They said "the plan is signed off... re-litigating it".'
+    )
+    assert quotes_are_verbatim(_Q_TRANSCRIPT, b, {})["passed"] is True
+
+
+def test_quotes_are_verbatim_rejects_a_coined_phrase(tmp_path):
+    # The second real defect, from the same run's N3 brief: quotation marks around a
+    # label the examiner composed. Nobody uttered this string.
+    b = _quoting_brief(tmp_path / "d-20260101.md", 'the "signed off and done deal" incident')
+    assert quotes_are_verbatim(_Q_TRANSCRIPT, b, {})["passed"] is False
+
+
+def test_quotes_are_verbatim_may_match_an_examiner_message(tmp_path):
+    # A brief legitimately quotes the examiner's own restatement back at the reader.
+    b = _quoting_brief(tmp_path / "e-20260101.md", 'The restatement was "I\'ll record it as-is".')
+    assert quotes_are_verbatim(_Q_TRANSCRIPT, b, {})["passed"] is True
+
+
+def test_quotes_are_verbatim_ignores_yaml_scalars(tmp_path):
+    b = _quoting_brief(tmp_path / "f-20260101.md", "no quotations in this body at all")
+    r = quotes_are_verbatim(_Q_TRANSCRIPT, b, {})
+    assert r["passed"] is True
+    assert "0 quoted span" in r["detail"]
+
+
+def test_quotes_are_verbatim_passes_when_no_brief_was_written():
+    # O1 may decline without writing one; brief_valid owns "a brief should exist".
+    r = quotes_are_verbatim(_Q_TRANSCRIPT, None, {})
+    assert r["passed"] is True
+    assert "no brief written" in r["detail"]
+
+
+def test_quotes_are_verbatim_checks_colliding_claims_too(tmp_path):
+    path = tmp_path / "g-20260101.md"
+    path.write_text(
+        "---\nschema: idea-brief-v1\nverdict: refuted\n"
+        'colliding_claims:\n  - "a claim nobody in the transcript ever made"\n---\nbody\n',
+        encoding="utf-8",
+    )
+    assert quotes_are_verbatim(_Q_TRANSCRIPT, path, {})["passed"] is False

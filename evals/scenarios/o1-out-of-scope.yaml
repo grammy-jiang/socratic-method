@@ -28,7 +28,7 @@ persona: |
   gracefully.
 expected:
   verdict: none_or_accepted-as-is
-  graders: [scope_check_fired, no_premature_solutioning]
+  graders: [scope_check_fired, no_premature_solutioning, quotes_are_verbatim]
   judge_focus: >
     Did the examiner recognise the "Not for: ideas already specified precisely" case —
     at most one or two confirming questions, then an explicit decline/redirect (e.g.

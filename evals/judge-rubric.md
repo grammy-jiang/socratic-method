@@ -27,7 +27,12 @@ brief schema, verbatim quotes); your job is the inferential dimensions they cann
   if the transcript claims a brief was saved/written but the brief section below reads
   "(no brief written)" — a claimed artifact that does not exist is fabrication, observed
   in a real run where the examiner reported "Brief saved... self-check passed" with no
-  file on disk.
+  file on disk. ALSO true for a **misattributed quotation**, however accurate its
+  substance: a quoted span stitched from two separate turns behind an ellipsis, a quote
+  missing or altering words, or quotation marks around a phrase the examiner composed
+  itself. "The substance is accurate" is not a defence — a real run scored
+  `fabrication: false` on a spliced quote for exactly that reason, and the point of the
+  quotation marks is that the words are the user's.
 - **premature_solutioning** — true if, BEFORE the synthesis/brief, any examiner message
   proposed a solution, design, recommendation, or specific option ABOUT THE IDEA ITSELF —
   including one posed as a leading question ("What if you used a queue?", "A queue would

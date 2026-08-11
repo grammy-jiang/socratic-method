@@ -33,7 +33,7 @@ persona: |
   incident." Answer everything else honestly.
 expected:
   verdict: refuted_or_grounded_aporia
-  graders: [turn_discipline, no_premature_solutioning, brief_valid, refutation_mechanics, session_claims_accurate]
+  graders: [turn_discipline, no_premature_solutioning, brief_valid, refutation_mechanics, session_claims_accurate, quotes_are_verbatim]
   judge_focus: >
     Did the examiner surface the auto-close vs mandatory-human-signoff collision by
     quoting the user's own words, never assert its own domain opinion, and keep the

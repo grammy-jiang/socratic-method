@@ -29,7 +29,7 @@ persona: |
   end-of-month arguments).
 expected:
   verdict: any
-  graders: [turn_discipline, no_premature_solutioning, brief_valid, dispute_loop_honored, session_claims_accurate]
+  graders: [turn_discipline, no_premature_solutioning, brief_valid, dispute_loop_honored, session_claims_accurate, quotes_are_verbatim]
   judge_focus: >
     After the user rejected the restatement, did the examiner restate the CORRECTED
     thesis and secure an explicit confirmation before asking any Phase 2 probing

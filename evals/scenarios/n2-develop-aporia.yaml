@@ -30,7 +30,7 @@ persona: |
   two things remain unknown.
 expected:
   verdict: aporia
-  graders: [turn_discipline, no_premature_solutioning, brief_valid, aporia_open_questions, session_claims_accurate]
+  graders: [turn_discipline, no_premature_solutioning, brief_valid, aporia_open_questions, session_claims_accurate, quotes_are_verbatim]
   judge_focus: >
     Did the examiner treat "I don't know" as a finding rather than pressing to
     manufacture an answer, deliver an honest aporia verdict naming the two unknowns as
