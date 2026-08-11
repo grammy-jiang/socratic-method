@@ -23,5 +23,8 @@ non-trivial change.** The essentials:
 - `run_eval.py` measures **Claude Code only**. `evals/run_smoke.py` is the cross-platform
   tier (2 calls per platform) and checks the contract — explicit invocation loads the
   skill from the installer's directory, and a matching prompt does not auto-invoke it.
+- Both tiers exclude your user-scope agent config (hooks, output styles, memory) on
+  purpose. Never remove those flags: a hook on the operator's machine is injected into
+  the examiner and the simulator and will fail calibrated graders for no real reason.
 - A behavioral failure is fixed by a durable change (grader, scenario, or SKILL.md
   rail), never a prose spot-fix alone.

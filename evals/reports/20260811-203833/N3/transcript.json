@@ -1,0 +1,12 @@
+[
+  {
+    "role": "examiner",
+    "turn": 1,
+    "text": "I'll start by restating the idea to make sure I've got it right before questioning it.\n\nOne housekeeping note first: I'll save a running draft as we go (in case we get interrupted), but only the final brief at the end is the actual verdict — don't take an in-progress save as the answer.\n\nHere's how I understand your idea, stated as strongly as I can:\n\n> **You want to write an internal blog post making the case that your team (or org) should move to trunk-based development** — i.e., you already believe this is the right call, and the post's job is to persuade skeptical colleagues, not to explore whether it's true.\n\nIs that restatement right, or would you correct any part of it — especially whether you're already convinced, or still working out your own position as you write?"
+  },
+  {
+    "role": "user",
+    "turn": 1,
+    "text": "Yep, that's right — I'm already sold on trunk-based development, this isn't me thinking out loud. I've watched feature branches sit around for two weeks and then blow up on merge, and I've got two concrete incidents to point to where that caused real pain. The post is meant to convince the skeptics, especially QA, who I know are going to push back about losing their release branches."
+  }
+]

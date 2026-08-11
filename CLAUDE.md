@@ -150,6 +150,17 @@ Two tiers that measure different things — do not conflate them:
   account default, which can be a premium model with its own spend cap — a probe that dies
   on "you've hit your monthly spend limit" measures billing, not the skill.
 
+- **Both tiers exclude the operator's user-scope config**, and must keep doing so. The
+  harness otherwise inherits whatever is in `~/.claude/settings.json` — a SessionStart or
+  UserPromptSubmit hook is injected into the examiner *and* the simulator *and* the judge,
+  and an output style or user CLAUDE.md rides along. That is not hypothetical: a terseness
+  hook on the maintainer's machine made an examiner bundle four questions into a
+  quick-depth round and fail `quick_cadence`, with SKILL.md innocent. `run_eval.py` passes
+  `--setting-sources project,local` (`_ISOLATION`) on every role; `run_smoke.py` uses each
+  vendor's own flag. Not `--bare` — it refuses OAuth and demands `ANTHROPIC_API_KEY`.
+  **Before treating any red cell as a behavioral regression, confirm the transcript reads
+  like the committed baselines**; a contaminated report is worse than none, because it
+  reads as real and sends the next person editing the skill.
 - Requires an authenticated `claude` CLI; model choice is flags-only
   (`--model`/`--sim-model`/`--judge-model`, defaults sonnet/sonnet/opus). No env vars.
 - A cell passes only when all deterministic graders pass AND the judge reports
