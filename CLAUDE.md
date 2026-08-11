@@ -175,6 +175,12 @@ Two tiers that measure different things — do not conflate them:
 - Grader triggers and persona scripts are phrase-coupled: `stop_honored` keys on
   "that's enough"/"wrap up", `dispute_loop_honored` on "not quite". Edit a persona line
   and its grader together.
+- `quotes_are_verbatim` runs on every cell and is deliberately strict: a quoted span in
+  the brief body must be reproducible, in order, from a **single** transcript message, so
+  an ellipsis may elide within one utterance but never weld two. It scans the body only —
+  never raw frontmatter, where `thesis_final: "..."` is YAML syntax, not speech. If it
+  starts failing on legitimate scare-quotes, the fix is the SKILL.md rail (quotation marks
+  are reserved for attribution; paraphrase without them), not a looser grader.
 - The examiner tool grant is deliberately `--allowedTools Skill,Read,Write,Edit` — close
   to, but not identical to, SKILL.md's `allowed-tools` (which names AskUserQuestion, not
   Edit). Widening it changes what the eval measures.
