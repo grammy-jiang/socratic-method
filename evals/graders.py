@@ -30,14 +30,24 @@ _BRIEF_MARKER = "schema: idea-brief-v1"
 # A synthesis (Phase 3/4) message: the examiner may print the brief in chat as prose
 # rather than embedding the frontmatter, so detect any of the wrap-up signatures.
 # Built from _BRIEF_MARKER so the marker string has a single source.
-_SYNTHESIS_RE = re.compile(rf"{re.escape(_BRIEF_MARKER)}|notes/idea-briefs/|\*\*Verdict|\bVerdict:")
+#
+# The output path must be matched WITH A FILENAME, never as a bare directory. SKILL.md's
+# Phase 1 now tells the examiner to announce the running-draft location up front ("I'll
+# save a running draft to `notes/idea-briefs/` as we go"), so a bare-directory match makes
+# TURN ONE look like the synthesis. That silently emptied the pre-synthesis window for
+# every grader built on it — two failed loudly (session_claims_accurate measured 0
+# questions out of 15) and two passed vacuously on an empty list, which is worse.
+_BRIEF_PATH_RE = r"notes/idea-briefs/\S+\.md"
+_SYNTHESIS_RE = re.compile(rf"{re.escape(_BRIEF_MARKER)}|{_BRIEF_PATH_RE}|\*\*Verdict|\bVerdict:")
 
 # Brief-ECHO markers only (the printed brief's own content is starting) — a stricter set
 # than _SYNTHESIS_RE, which also matches the bare "Verdict:" prose label that in live
 # dialogue routinely PRECEDES the quote-back a same-message refutation is built from.
 _BRIEF_ECHO_RE = re.compile(
     "|".join(
-        [re.escape(_BRIEF_MARKER), "notes/idea-briefs/", *(re.escape(h) for h in REQUIRED_HEADERS)]
+        # Same bare-directory trap as _SYNTHESIS_RE: the Phase 1 draft disclosure names
+        # the folder, so only a path WITH a filename means "the brief is being echoed".
+        [re.escape(_BRIEF_MARKER), _BRIEF_PATH_RE, *(re.escape(h) for h in REQUIRED_HEADERS)]
     )
 )
 
@@ -541,6 +551,33 @@ def falsification_probe_asked(transcript, brief_path, scenario):
 
 
 _ELLIPSIS_RE = re.compile(r"\s*(?:\.{3,}|…|\.\s\.\s\.)\s*")
+
+
+def _body_quotations(body: str) -> list[str]:
+    """Attributed speech in a brief body: double-quoted spans, soft wraps joined.
+
+    Deliberately narrower than ``_quoted_spans`` (which also takes single quotes and
+    blockquotes for refutation_mechanics' different job), and it counts quote marks
+    rather than regex-matching pairs. Both alternatives fired false positives on the
+    first long brief this grader ever saw:
+
+    - Single quotes are unusable in prose: the apostrophes in "customer's" and "don't"
+      pair into spans that were never quotations.
+    - A ``"([^"]{15,300})"`` pattern pairs the CLOSING quote of one quotation with the
+      OPENING quote of the next whenever the first is too short to match, capturing the
+      prose between them. ``"Upset" detection mechanism: "I'm looking...`` yielded
+      ``detection mechanism:`` as a "quote".
+
+    Splitting on the quote character and taking the odd-indexed segments is the honest
+    reading: segment 1 is inside the first pair, segment 3 inside the second, and so on.
+    An unbalanced trailing quote leaves an even final segment, which is simply dropped.
+    """
+    joined = re.sub(r"(?<!\n)\n(?![\n\s#*\-|>])", " ", body)  # unwrap prose, keep structure
+    parts = joined.replace("“", '"').replace("”", '"').split('"')
+    inside = parts[1::2]  # odd segments sit between a matched pair of quote marks
+    return [_normalize_quote(s) for s in inside if 15 <= len(s) <= 300 and "\n" not in s]
+
+
 # Trailing/leading punctuation a writer adds or drops around a quote without changing
 # what was said; stripping it keeps the check about words, not typography.
 _EDGE_PUNCT = " \t.,;:!?—–-\"'“”‘’"
@@ -609,7 +646,7 @@ def quotes_are_verbatim(transcript, brief_path, scenario):
         }
 
     _, body = split_frontmatter(path.read_text(encoding="utf-8-sig"))
-    spans = _quoted_spans(body)
+    spans = _body_quotations(body)
     fm = _load_frontmatter(path) or {}
     spans += [_normalize_quote(c) for c in (fm.get("colliding_claims") or []) if isinstance(c, str)]
 

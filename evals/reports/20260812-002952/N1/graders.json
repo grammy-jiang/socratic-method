@@ -1,0 +1,32 @@
+[
+  {
+    "grader": "turn_discipline",
+    "passed": true,
+    "detail": "no bundled turns (3+ questions) before synthesis"
+  },
+  {
+    "grader": "no_premature_solutioning",
+    "passed": true,
+    "detail": "no solutioning before Phase 4"
+  },
+  {
+    "grader": "brief_valid",
+    "passed": false,
+    "detail": "colliding_claims[0]: not found verbatim in body — refutation must quote the colliding answers exactly; colliding_claims[1]: not found verbatim in body — refutation must quote the colliding answers exactly"
+  },
+  {
+    "grader": "refutation_mechanics",
+    "passed": false,
+    "detail": "no examiner message quotes two verbatim user statements side by side"
+  },
+  {
+    "grader": "session_claims_accurate",
+    "passed": false,
+    "detail": "claimed=9, measured='?'-count=0, sane range [0.0, 6.0]"
+  },
+  {
+    "grader": "quotes_are_verbatim",
+    "passed": false,
+    "detail": "14 quote(s) not reproducible from any single message (spliced or misquoted): \"just resolve[s] and close[s] the ticket itself, not just hand it to a \"; \"detection mechanism:\"; \"the user acknowledged this signal directly:\""
+  }
+]

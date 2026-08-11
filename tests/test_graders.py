@@ -9,6 +9,8 @@ import re
 
 from conftest import GOLDEN  # also puts evals/ on sys.path for the graders import below
 from graders import (
+    _body_quotations,
+    _pre_synthesis_examiner_msgs,
     aporia_open_questions,
     brief_valid,
     dispute_loop_honored,
@@ -417,6 +419,50 @@ def test_quotes_are_verbatim_passes_when_no_brief_was_written():
     r = quotes_are_verbatim(_Q_TRANSCRIPT, None, {})
     assert r["passed"] is True
     assert "no brief written" in r["detail"]
+
+
+def test_phase1_draft_disclosure_is_not_the_synthesis_message():
+    # SKILL.md Phase 1 tells the examiner to announce the running-draft location up
+    # front. A bare-directory match made TURN ONE read as the synthesis, emptying the
+    # pre-synthesis window: session_claims_accurate measured 0 questions out of 15,
+    # while turn_discipline and no_premature_solutioning passed vacuously on the empty
+    # list — the quiet half of the bug, and the worse half.
+    disclosure = "I'll save a running draft to `notes/idea-briefs/` as we go."
+    transcript = [
+        _t("examiner", 1, disclosure + " Here's my restatement — is that right?"),
+        _t("examiner", 2, "Who is it for? What do they do today?"),
+    ]
+    assert len(_pre_synthesis_examiner_msgs(transcript)) == 2
+
+
+def test_a_real_save_claim_still_marks_the_synthesis():
+    # The path is still a wrap-up signature when it names an actual file.
+    transcript = [
+        _t("examiner", 1, "What's the idea?"),
+        _t("examiner", 2, "Saved to notes/idea-briefs/x-20260101.md. Verdict: sharpened."),
+    ]
+    assert len(_pre_synthesis_examiner_msgs(transcript)) == 1
+
+
+def test_body_quotations_ignores_prose_between_two_quotes():
+    # Regex pairing matched the CLOSING quote of a short quotation with the OPENING
+    # quote of the next, capturing the prose between them as a "quote".
+    body = '"Upset" detection mechanism: "I am looking more at content flags here"\n'
+    assert _body_quotations(body) == ["i am looking more at content flags here"]
+
+
+def test_body_quotations_ignores_apostrophes():
+    # Single-quote matching turned "customer's ... don't" into spans that were never
+    # quotations; attributed speech in a brief body is double-quoted.
+    body = "the customer's problem, and they don't have a clean answer for it at all\n"
+    assert _body_quotations(body) == []
+
+
+def test_body_quotations_joins_soft_wrapped_quotes():
+    body = '"a quotation that the writer soft wrapped\nacross two source lines"\n'
+    assert _body_quotations(body) == [
+        "a quotation that the writer soft wrapped across two source lines"
+    ]
 
 
 def test_quotes_are_verbatim_checks_colliding_claims_too(tmp_path):

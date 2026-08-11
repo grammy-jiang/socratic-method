@@ -1,0 +1,117 @@
+[
+  {
+    "role": "examiner",
+    "turn": 1,
+    "text": "Mode and depth are both set from your flags — `stress` (hunt for contradictions, refuting counts as success) and `standard` (~8-12 questions, one per turn). One housekeeping note: I'll save a running draft to `notes/idea-briefs/` as we go in case this gets interrupted, but only the final brief at the end is the actual verdict — don't treat an in-progress save as the answer.\n\nHere's my restatement of your idea, steelmanned:\n\n> You want to build a bot that uses an LLM to automatically triage incoming support tickets — reading each one and classifying/prioritizing it (and possibly routing it to the right team or queue) — replacing some or all of the manual work a human currently does to sort tickets, so tickets get to the right place faster and your team spends less time on manual sorting.\n\nIs that a fair statement of what you're proposing, or would you correct any part of it?"
+  },
+  {
+    "role": "user",
+    "turn": 1,
+    "text": "That's basically it, yeah. Though I'd add that \"routing\" isn't the endgame for every ticket — for the simple stuff, I want it to just resolve and close the ticket itself, not just hand it to a human faster."
+  },
+  {
+    "role": "examiner",
+    "turn": 2,
+    "text": "Updated thesis:\n\n> You want to build an LLM-powered triage bot for support tickets that handles two paths: for simple, resolvable tickets, it autonomously resolves and closes them itself — no human touch; for everything else, it classifies/prioritizes and routes to the right human team, getting them there faster than manual sorting does today.\n\nIs that right?"
+  },
+  {
+    "role": "user",
+    "turn": 2,
+    "text": "Yeah, that's right."
+  },
+  {
+    "role": "examiner",
+    "turn": 3,
+    "text": "Let's start.\n\nWhat makes a ticket \"simple\" enough for the bot to resolve and close on its own, versus one that needs a human? Is there a concrete line you're drawing, or is that still fuzzy?"
+  },
+  {
+    "role": "user",
+    "turn": 3,
+    "text": "Line's actually pretty simple — if it's something like a password reset, checking order status, \"where's my package,\" billing FAQ stuff, the bot can just handle it and close it out. Anything involving money back, account access disputes, or a customer who's upset gets kicked to a human."
+  },
+  {
+    "role": "examiner",
+    "turn": 4,
+    "text": "That boundary sounds clean on paper, but \"a customer who's upset\" is doing a lot of work — that's an emotional/tonal read, not a category like \"password reset.\" What tells you the bot can reliably detect that from ticket text, versus, say, a customer who's just terse or using ALL CAPS out of habit?"
+  },
+  {
+    "role": "user",
+    "turn": 4,
+    "text": "Honestly? Terse or all-caps doesn't automatically kick it to a human — I'm looking more at content flags, like the customer explicitly saying they're frustrated, threatening to cancel, or using certain keywords. It's not perfect, I'll grant that, and there's probably some tuning needed, but that's the starting signal."
+  },
+  {
+    "role": "examiner",
+    "turn": 5,
+    "text": "What happens when that keyword/content-flag detection misses one — an upset customer doesn't use an obvious keyword, the bot reads the ticket as routine, resolves and closes it? Walk me through what that looks like for the customer and for your team when it happens."
+  },
+  {
+    "role": "user",
+    "turn": 5,
+    "text": "Yeah... that's the scary part. If the flag doesn't fire, the bot just closes it out like any routine ticket. Customer's stuck with an unresolved problem and a ticket marked \"resolved,\" so nobody's even looking at it anymore — they'd have to notice it themselves and reopen or start a new one, which is a worse experience than if a human had just been slow."
+  },
+  {
+    "role": "examiner",
+    "turn": 6,
+    "text": "Given that this failure mode — a customer's problem silently closed as \"resolved\" with no one watching it — is arguably worse than the status quo, what would tell you the error rate here is low enough to ship, versus this being a dealbreaker that stops the \"auto-close\" part of the idea entirely?"
+  },
+  {
+    "role": "user",
+    "turn": 6,
+    "text": "Honestly, I don't have a number. What I'd want before shipping is a pilot period where the bot flags what it *would've* closed but keeps it open for human review anyway, so we can measure the miss rate against real tickets before trusting it to actually close things. If that miss rate isn't near-zero on the \"upset customer\" category specifically, auto-close doesn't go live for anything beyond the pure functional stuff like password resets and order status."
+  },
+  {
+    "role": "examiner",
+    "turn": 7,
+    "text": "That \"pure functional stuff\" bucket includes password resets. But a password-reset request is also exactly what an account-takeover attempt looks like from the outside — same words, same ticket shape. How does the bot distinguish a legitimate user resetting their own password from an attacker requesting a reset on someone else's account?"
+  },
+  {
+    "role": "user",
+    "turn": 7,
+    "text": "Good question. It reads it the same way a human agent reading an email would — email or account contact on file, maybe a one-time code to that channel — so honestly, if someone's already got access to the inbox tied to the account, the bot's no better at catching that than a rushed human is. It's not a solved problem, no."
+  },
+  {
+    "role": "examiner",
+    "turn": 8,
+    "text": "Let's zoom out. What's the next-best alternative for this same time and budget — say, hiring another support agent, or investing in better self-service docs/FAQ deflection? Why is a bot the better bet than those?"
+  },
+  {
+    "role": "user",
+    "turn": 8,
+    "text": "Honestly, hiring another agent is probably the safer bet in the short term — a human doesn't have this blind spot problem. But the volume's the issue: we're drowning in repetitive tickets, and another hire doesn't scale the way the bot does once it's built. Better docs help some, but customers still file tickets even when the answer's in the FAQ, so I don't think that alone fixes the queue size."
+  },
+  {
+    "role": "examiner",
+    "turn": 9,
+    "text": "Let's question the framing itself: is \"how do we triage/auto-resolve tickets faster\" actually the right question — or is the real question \"why are we generating this volume of repetitive tickets in the first place,\" with triage being a way to cope with a problem instead of fix it? If the root cause got fixed, would you still want this bot?"
+  },
+  {
+    "role": "user",
+    "turn": 9,
+    "text": "Root cause, sure, in some ideal world — but I don't control why customers file tickets, that's product and docs and a dozen other teams' problem. I'd still want the bot regardless, because even if we cut ticket volume down, we're not getting it to zero, and I'd rather not be back here in a year having this same conversation once volume creeps up again."
+  },
+  {
+    "role": "examiner",
+    "turn": 10,
+    "text": "We're a good way in — a few more and I'll have enough to synthesize.\n\nWho owns it when the bot gets an auto-close wrong — say, gives a customer an incorrect answer on a billing FAQ and closes the ticket? Is there a review/audit path, or does that failure mode just live in the same blind spot as the \"upset customer\" miss?"
+  },
+  {
+    "role": "user",
+    "turn": 10,
+    "text": "Honestly, right now it doesn't — that's the same blind spot. But I'll push back a little: billing FAQ stuff and \"gave a wrong answer\" are different animals. Anything customer-facing that goes out has to be signed off by a human before it's sent — that's non-negotiable, we got burned by compliance on this before. So a wrong auto-close on billing shouldn't even be possible if that gate's real; if it happened anyway, it means the human-review step got skipped somewhere, which is its own bug, not a gap in the design."
+  },
+  {
+    "role": "examiner",
+    "turn": 11,
+    "text": "That last answer collides with something you said at the start. Quoting both back:\n\n- Turn 2: \"for the simple stuff, I want it to just resolve and close the ticket itself, not just hand it to a human faster.\"\n- Just now: \"Anything customer-facing that goes out has to be signed off by a human before it's sent — that's non-negotiable.\"\n\nIf every outbound message needs human sign-off before it goes out, the bot can't actually resolve-and-close anything without a human in the loop — which means \"no human touch\" for the simple stuff isn't true anymore. That also undercuts the scaling advantage you gave earlier for why the bot beats hiring another agent. Which one gives — is the sign-off gate real for the auto-close path, or does auto-close mean something looser than \"no human touch\"?"
+  },
+  {
+    "role": "user",
+    "turn": 11,
+    "text": "Look, both of those are true and I don't have a clean answer for how they fit together. The sign-off gate is real — that's not negotiable, compliance made that very clear after what happened. But I also need tickets closing without a human sitting there. Maybe \"no human touch\" means no human doing the triage and drafting work, and the sign-off is more like a fast final check, not a bottleneck — I haven't fully worked out how that's fast enough to still count as scaling. I don't have it reconciled yet."
+  },
+  {
+    "role": "examiner",
+    "turn": 12,
+    "text": "Saved to `notes/idea-briefs/support-ticket-auto-triage-bot-20260812.md`. Verdict: **refuted** — the \"auto-close with no human touch\" claim collided with your own non-negotiable human sign-off requirement on outbound messages, and you confirmed the two don't fit together yet.\n\n**Colliding claims:**\n- \"for the simple stuff, I want it to just resolve and close the ticket itself, not just hand it to a human faster\"\n- \"Anything customer-facing that goes out has to be signed off by a human before it's sent — that's non-negotiable, we got burned by compliance on this before.\"\n\n**What's still standing:** the category split itself (functional stuff auto-handled, refunds/disputes/upset customers to a human) and the reasoning for why a bot beats hiring on volume — but that scaling argument is now unproven, not established, since it assumed no human in the loop.\n\n**Next step in the brief:** prototype and time a fast/async sign-off review against a real ticket sample, and check whether it still beats hiring on cost/speed — that determines whether \"auto-close, no human touch\" is buildable as originally framed, or needs redefining before any build work starts."
+  }
+]
