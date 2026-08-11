@@ -591,6 +591,12 @@ def quotes_are_verbatim(transcript, brief_path, scenario):
     A span may match any single message, examiner or user — a brief legitimately quotes the
     examiner's own restatement back. The failure this catches is a quote that exists in no
     single utterance at all.
+
+    Known, deliberate boundary: attributions nested inside other frontmatter scalars (the
+    golden fixture's ``constraints`` entry carries one) are not scanned. Reaching them means
+    quote-hunting inside parsed YAML strings, where an apostrophe in ``it's`` is
+    indistinguishable from a closing single quote — more false positives than the narrow
+    coverage is worth. The body is where the defect appeared.
     """
     path = Path(brief_path) if brief_path else None
     if path is None or not path.is_file():
