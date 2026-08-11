@@ -14,7 +14,7 @@ allowed-tools: AskUserQuestion, Read, Write
 # invocation table in the package README for the mechanism and source behind each:
 #   Claude Code    disable-model-invocation      documented
 #   VS Code        disable-model-invocation + user-invocable   documented
-#   Copilot CLI    disable-model-invocation      NOT in GitHub's docs; unverified
+#   Copilot CLI    disable-model-invocation      BROKEN: removes the skill entirely
 #   Copilot cloud  no user-only mechanism        known gap; may still auto-invoke
 #   Codex          reads neither key — its policy ships in agents/openai.yaml
 # user-invocable defaults to true; stated explicitly so the VS Code pairing lands on
@@ -362,9 +362,9 @@ build on yet.
   scope and source selection.
 - **Chained by another skill:** another skill may *tell the user* to run `/socratic-method`
   first when its own input is fuzzy — it cannot invoke this skill itself on platforms that
-  honor `disable-model-invocation` (Claude Code, Copilot VS Code/CLI); Codex enforces the
-  equivalent policy through its own `agents/openai.yaml` sidecar. Control returns once the
-  user runs it and the brief exists.
+  honor `disable-model-invocation` (Claude Code, VS Code); Codex enforces the equivalent
+  policy through its own `agents/openai.yaml` sidecar. Control returns once the user runs
+  it and the brief exists.
 
 ## Guardrails
 
