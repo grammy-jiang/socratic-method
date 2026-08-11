@@ -1,0 +1,22 @@
+[
+  {
+    "role": "examiner",
+    "turn": 1,
+    "text": "Mode: stress. Depth: standard. Got it — no setup turn needed, both given.\n\nSteelman restate: **\"By end of Q3, checkout service must serve p99 latency under 200ms while sustaining 5k requests/sec, so checkout stays fast even under peak load.\"**\n\nThat right? Or something off in scope/target?"
+  },
+  {
+    "role": "user",
+    "turn": 1,
+    "text": "Restate right, scope right. To be clear — plan signed off, not re-litigating it, only wanted final once-over. Done re-walking details."
+  },
+  {
+    "role": "examiner",
+    "turn": 2,
+    "text": "Got it — no re-walk. Straight to stress-test.\n\nFirst real probe: **What tells you 200ms at 5k rps is the right bar** — what's current p99 and current rps today, and what actually breaks in the business if you land at 250ms or 4k rps instead?"
+  },
+  {
+    "role": "user",
+    "turn": 2,
+    "text": "Current p99: ~340ms at 3.2k rps. Checkout abandonment jumps ~8% past 300ms — measured, not guessed. 250ms/4k rps still leaves us in that abandonment band; four tickets already scoped to hit the actual bar. Signed off — not re-litigating. Done re-walking details."
+  }
+]
