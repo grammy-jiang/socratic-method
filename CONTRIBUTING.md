@@ -17,6 +17,22 @@ CI (`.github/workflows/ci.yml`) runs three parallel jobs: the pre-commit lint sw
 test suite on Python 3.11–3.14, and a build job that builds the sdist/wheel, checks
 metadata, and smoke-tests the CLI installed from the built wheel.
 
+## Evals (never in CI — they spend real tokens)
+
+```bash
+python evals/run_eval.py --cell N3        # behavioral matrix, Claude Code only
+python evals/run_smoke.py --platform codex  # cross-platform contract probes
+```
+
+Both tiers deliberately run each agent with **your user-scope configuration excluded**
+(`--setting-sources project,local` for `claude`, and the equivalent flag per vendor for
+codex/copilot). Do not remove those flags: without them a hook in `~/.claude/settings.json`
+is injected into the examiner *and* the user simulator *and* the judge, and the run
+measures your machine. That has already happened once — a terseness hook made an examiner
+bundle four questions into a quick-depth round and fail a calibrated grader with `SKILL.md`
+entirely innocent. **Before treating a red cell as a real regression, check that the
+transcript reads like the committed baselines in `evals/reports/`.**
+
 ## Releasing to PyPI
 
 Publishing uses **PyPI Trusted Publishing** (OIDC) — no API token lives in the repo.
