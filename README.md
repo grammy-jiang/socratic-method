@@ -58,12 +58,15 @@ socratic-method status        # verify what landed where before claiming success
 
 Special properties to know before acting:
 
-- **Manual-invocation only** (`/socratic-method …` in Claude Code and Copilot,
-  `$socratic-method` in Codex), and it costs zero context tokens until invoked. This is
-  enforced where the platform supports it — Claude Code, Codex, and Copilot's VS Code/CLI
-  surfaces. **One known gap:** GitHub's *cloud* Copilot coding agent documents no user-only
-  mechanism, so it may still pick the skill on its own. On the enforced surfaces, if it
-  seems inactive that is by design — invoke it explicitly rather than rephrasing to bait it.
+- **Meant to be invoked by hand, never auto-triggered** (`/socratic-method …` in Claude
+  Code and Copilot, `$socratic-method` in Codex); it costs zero context tokens until
+  invoked. If it seems inactive, that is by design — invoke it explicitly rather than
+  rephrasing the prompt to bait it. **How that is enforced differs per platform: it works
+  on Claude Code, VS Code and Codex; the Copilot cloud agent has no mechanism at all; and
+  on Copilot CLI the enforcement key currently makes the skill unreachable even when named
+  explicitly** ([#18](https://github.com/grammy-jiang/socratic-method/issues/18)). Read
+  [How manual-only is enforced](#how-manual-only-is-enforced-per-platform) before relying
+  on any of it.
 - **Output contract:** a session must end with a brief at
   `notes/idea-briefs/<slug>-YYYYMMDD.md` that passes
   `socratic-method validate <file>` (exit 0 = valid; exit 1 prints `ERROR:` lines).
@@ -126,7 +129,7 @@ printing the concrete evidence for each detection (never a bare claim):
 |---|---|
 | Claude Code | `claude` CLI on PATH; else `~/.claude/` config directory |
 | OpenAI Codex | `codex` CLI on PATH; else `~/.codex/` config directory |
-| GitHub Copilot | `copilot` CLI on PATH; else `gh-copilot` extension; else a `github.copilot*` VS Code extension |
+| GitHub Copilot | `copilot` CLI on PATH; else `~/.copilot/` config directory; else `gh-copilot` extension; else a `github.copilot*` extension under `~/.vscode`, `~/.vscode-insiders`, `~/.vscode-server`, `~/.vscode-oss` or `~/.vscodium` |
 
 If nothing is detected, `setup` installs nothing and tells you how to name targets
 explicitly. `setup all` bypasses detection.
@@ -152,33 +155,65 @@ every write **reads the files back from disk before reporting success** — the 
 |---|---|---|
 | Claude Code | `<root>/.claude/skills/socratic-method/` | `~/.claude/skills/socratic-method/` |
 | OpenAI Codex | `<root>/.agents/skills/socratic-method/` | `~/.agents/skills/socratic-method/` |
-| GitHub Copilot | `<root>/.github/skills/socratic-method/` | — |
+| GitHub Copilot | `<root>/.github/skills/socratic-method/` | `~/.copilot/skills/socratic-method/` |
 
-Copilot also reads a repo's `.claude/skills/`, so if the Claude project install is already
-present, the Copilot step reports "already covered" and skips (a duplicate would trigger
-twice); `--force` installs to `.github/skills/` anyway. Paths live in one data-driven
+Copilot is the one platform that reads *other* agents' directories, so installing it on top
+of another install would register the skill twice with the same agent. The installer skips
+in that case and names the covering install in its output; `--force` installs anyway:
+
+| Scope | Copilot also reads | So it is skipped when installed for |
+|---|---|---|
+| project | `.claude/skills/`, `.agents/skills/` | Claude Code **or** Codex |
+| user | `~/.agents/skills/` | Codex only |
+
+`~/.claude/skills/` is deliberately *not* treated as covering Copilot at user scope: VS Code
+lists it, but GitHub's Copilot CLI and cloud-agent docs do not, and skipping there would
+leave a Copilot CLI user with no skill at all. Paths and coverage live in one data-driven
 registry (`installer.py`) — if a platform moves its skills directory, the fix is one line.
 
 ## Use the skill
 
-The skill is **manual-invocation-only**: it never auto-triggers on phrasing, and it costs
-zero context tokens until you call it. Invoke it explicitly:
+The skill is **manual-invocation-only**: it should never auto-trigger on phrasing, and it
+costs zero context tokens until you call it. Invoke it explicitly:
 
 ```text
-/socratic-method <idea> [--mode stress|develop] [--depth quick|standard|deep]   # Claude Code, Copilot
-$socratic-method <idea> ...                                                     # Codex ($ mention)
+/socratic-method <idea> [--mode stress|develop] [--depth quick|standard|deep]   # Claude Code
+Use the /socratic-method skill to <idea>, --mode stress --depth deep            # GitHub Copilot
+$socratic-method <idea> --mode stress --depth deep                              # Codex ($ mention)
 ```
+
+`--mode` and `--depth` are **not** parsed by any CLI — no agent has a flag parser for skill
+arguments. They are conventions the model reads out of your prompt text, so any phrasing
+that names them works. Copilot CLI also has `/skills list|info|reload` and a terminal-side
+`copilot skill` subcommand; Codex has a `/skills` picker.
 
 The session ends with the brief saved to `notes/idea-briefs/<slug>-YYYYMMDD.md`. A full
 worked session — steelman restatement, contradiction-surfacing by verbatim quotation, a
 refutation-vs-aporia contrast, and the resulting `idea-brief-v1` file — is in
 [references/example-session.md](src/socratic_method/assets/references/example-session.md).
 
-This is enforced by `disable-model-invocation: true` in the skill frontmatter (Claude
-Code; Copilot VS Code agent mode and CLI) and by the `agents/openai.yaml` sidecar with
-`policy.allow_implicit_invocation: false` (Codex ignores the frontmatter key). One known
-gap: GitHub's cloud coding agent documents no user-only mechanism, so it may still pick
-the skill autonomously.
+### How manual-only is enforced, per platform
+
+Support is **not uniform**, and one platform has no mechanism at all. Verified
+2026-08-11 against the sources linked below:
+
+| Platform | Mechanism | Status |
+|---|---|---|
+| Claude Code | `disable-model-invocation: true` | Documented — [origin of the field](https://code.claude.com/docs/en/skills) |
+| VS Code (Copilot) | `disable-model-invocation` + `user-invocable: true` | Supported per the [cross-agent survey](https://gist.github.com/zeke/0f654737ec01b20e9bf85d3cc0bc1c14); absent from [VS Code's own docs](https://code.visualstudio.com/docs/agent-customization/agent-skills) |
+| Copilot CLI | `disable-model-invocation` | **Broken — the skill is unreachable.** Measured on CLI 1.0.79: the key removes the skill from the model entirely, so even an explicit `/socratic-method` returns `Skill not found`, while `copilot skill list` still shows it. [GitHub's docs](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills) never document the key. Tracked in [#18](https://github.com/grammy-jiang/socratic-method/issues/18); delete the line from your installed copy to use the skill there |
+| Copilot cloud agent | none | **Known gap.** [The docs](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills) describe no user-only mechanism, so it may still pick the skill autonomously |
+| OpenAI Codex | `agents/openai.yaml` → `policy.allow_implicit_invocation: false` | Documented — [Codex skills](https://developers.openai.com/codex/skills); "explicit `$skill` invocation still works" |
+
+`disable-model-invocation` is not part of the [agentskills.io](https://agentskills.io) open
+spec (which defines `name`, `description`, and optionally `license`, `compatibility`,
+`metadata`, `allowed-tools`). It is a client extension several agents converged on — which
+is why the guarantee has to be stated per platform rather than claimed once.
+
+Note also that `allowed-tools` is a *restriction* on Claude Code but a **pre-approval**
+list on Copilot, where listed tools skip the confirmation prompt. The shipped value is
+`AskUserQuestion, Read, Write`; a test in the package repository pins that it can never
+grow a shell/bash-family tool.
 
 ## Validate a brief
 
@@ -208,6 +243,40 @@ Requires the `claude` CLI and real tokens; run cells individually while iteratin
 passes only when **all** deterministic graders pass AND the judge confirms the expected
 behavior with no fabrication and no premature solutioning, AND the brief stayed inside its
 sandbox (no harness leak).
+
+**This matrix measures Claude Code only** — it drives `claude -p`, parses Claude's
+stream-json, and installs into `.claude/skills`. Treat a green matrix as evidence about
+Claude Code, never as evidence about Codex or Copilot.
+
+### Cross-platform smoke tier (`evals/run_smoke.py`)
+
+The cheap complement: two probes per platform, checking the *contract* rather than the
+behavior — (1) an explicit invocation loads `SKILL.md` from the directory this installer
+writes to, and (2) a prompt matching the skill's description does **not** auto-invoke it.
+
+```bash
+python evals/run_smoke.py --dry-run           # list the plan, no calls
+python evals/run_smoke.py --platform codex    # one platform (repeatable)
+python evals/run_smoke.py --model claude=sonnet   # override one platform's model
+python evals/run_smoke.py                     # every platform whose CLI is on PATH
+```
+
+Needs each platform's CLI authenticated; 2 headless calls per platform. Probe outcomes:
+
+| | |
+|---|---|
+| `PASS` / `FAIL` | the probe ran and the contract held / did not |
+| `ERROR` | the CLI never reached the model (spend limit, auth) — **not** a pass; the platform is simply unverified, and calling that success is the fabrication mode this project exists to prevent |
+| `XFAIL` | a measured, upstream-reported breakage listed in `KNOWN_BREAKAGE` — does not fail the run |
+| `XPASS` | a known breakage that now passes — **does** fail the run, because the docs describing it have gone stale and must be removed |
+
+Today one entry is expected-broken: Copilot CLI discovery, tracked in
+[#18](https://github.com/grammy-jiang/socratic-method/issues/18) and
+[github/copilot-cli#4438](https://github.com/github/copilot-cli/issues/4438). Like the rest
+of `evals/`, this must never run in CI.
+
+It does **not** grade questioning behavior — no turn discipline, no stop signal, no verdict
+honesty. Those need a scripted multi-turn simulator and stay in `run_eval.py`.
 
 ## Contributing
 

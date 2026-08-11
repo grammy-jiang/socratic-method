@@ -157,10 +157,23 @@ def _parse_stream_json(stdout: str) -> tuple[str | None, str, bool]:
     return session_id, result_text, is_error
 
 
+# Every role runs with the operator's USER settings excluded. Without this the harness
+# measures the developer's machine: a SessionStart or UserPromptSubmit hook in
+# ~/.claude/settings.json is injected into the examiner AND the simulator, and an output
+# style or a user CLAUDE.md rides along too. One such hook (a terseness mode) was enough to
+# make the examiner bundle four questions into a quick-depth round and fail `quick_cadence`
+# — a grader failure with nothing to do with SKILL.md. Reports are this project's evidence
+# trail; evidence contaminated by local config is worse than none.
+#
+# `project,local` and not `--bare`: bare refuses OAuth and demands ANTHROPIC_API_KEY. The
+# sandbox workdir has neither project nor local settings, so in practice this loads none.
+_ISOLATION = ("--setting-sources", "project,local")
+
+
 def examiner_call(
     workdir: Path, model: str, prompt: str, session_id: str | None
 ) -> tuple[str | None, str, bool]:
-    cmd = ["claude", "-p"]
+    cmd = ["claude", "-p", *_ISOLATION]
     if session_id:
         cmd += ["--resume", session_id]
     cmd += [
@@ -180,7 +193,10 @@ def examiner_call(
 
 
 def one_shot(model: str, prompt: str, cwd: Path, timeout: int) -> str:
-    cmd = ["claude", "-p", "--model", model, prompt]
+    # Simulator and judge are isolated too: a hook that reshapes the *user's* replies
+    # changes what the examiner is graded against, and one that reshapes the *judge*
+    # changes the verdict itself.
+    cmd = ["claude", "-p", *_ISOLATION, "--model", model, prompt]
     return _run(cmd, cwd=cwd, timeout=timeout).strip()
 
 

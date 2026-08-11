@@ -1,11 +1,26 @@
 ---
 name: socratic-method
 description: "Interrogates the user's idea with disciplined Socratic questioning until hidden assumptions, contradictions, and gaps are surfaced, then synthesizes a refined idea brief (idea-brief-v1). Universal — works on any idea: a piece of software, a document, a plan, a decision, a research direction, a purchase, a life change. Use BEFORE real work or commitment starts. Manual-invocation only — it never auto-triggers; reach for it when the user says 'question me about', 'help me think through', 'is this clear enough to start', 'poke holes in this', 'play devil's advocate', 'stress-test this plan', 'sanity-check this idea', 'what am I missing here', or presents a fuzzy idea and asks what to do. Not for: ideas already specified precisely, or when the user wants answers rather than questions."
+# `allowed-tools` means three different things on the platforms this skill ships to:
+# a RESTRICTION on Claude Code (the skill may use only these), a PRE-APPROVAL list on
+# GitHub Copilot (these run without a confirmation prompt; unlisted ones still ask),
+# and nothing at all on Codex, whose SKILL.md reads only name/description. So the list
+# must hold only tools that are safe to run unprompted. Never add a command-execution
+# tool here — pinned by tests/test_assets.py in the package repository.
+# AskUserQuestion exists on Claude Code alone; the Setup turn below falls back to plain
+# text everywhere else, so its presence here is inert rather than load-bearing.
 allowed-tools: AskUserQuestion, Read, Write
-# Manual invocation only (/socratic-method): honored by Claude Code and by GitHub
-# Copilot (VS Code agent mode + CLI); Codex ignores this key — its equivalent policy
-# ships in the agents/openai.yaml sidecar next to this file.
+# Manual invocation only. Support is per-platform and not uniform — see the
+# invocation table in the package README for the mechanism and source behind each:
+#   Claude Code    disable-model-invocation      documented
+#   VS Code        disable-model-invocation + user-invocable   documented
+#   Copilot CLI    disable-model-invocation      BROKEN: removes the skill entirely
+#   Copilot cloud  no user-only mechanism        known gap; may still auto-invoke
+#   Codex          reads neither key — its policy ships in agents/openai.yaml
+# user-invocable defaults to true; stated explicitly so the VS Code pairing lands on
+# on-demand-only rather than depending on a default.
 disable-model-invocation: true
+user-invocable: true
 ---
 
 ## Purpose
@@ -16,10 +31,10 @@ dialogue: the questioner does not lecture or propose; they draw the idea out of 
 holds it (maieutics, "midwifery"), and treat reaching honest puzzlement (aporia) as progress,
 not failure.
 
-This skill turns Claude into that questioner. The user brings an idea — *any* idea: a thing to
+This skill turns you into that questioner. The user brings an idea — *any* idea: a thing to
 build, a document to write, a decision to make, a plan to commit to, a direction to research —
-and Claude questions it until it is either sharpened into something actionable or honestly
-shown to be unresolved. The result is written down as an **idea brief** that downstream work
+and you question it until it is either sharpened into something actionable or honestly shown
+to be unresolved. The result is written down as an **idea brief** that downstream work
 (planning, building, researching, deciding) can consume.
 
 **You are the questioner, not the answerer.** Until the synthesis phase you contribute no
@@ -29,9 +44,17 @@ subject matter pull you into acting as a domain expert instead of an examiner.
 
 ## Invocation
 
+The skill never auto-triggers; the user names it. How they name it differs by platform:
+
+```text
+/socratic-method <idea> [--mode stress|develop] [--depth quick|standard|deep]   # Claude Code
+Use the /socratic-method skill to <idea>, --mode stress --depth deep            # GitHub Copilot
+$socratic-method <idea> --mode stress --depth deep                              # Codex ($ mention)
 ```
-/socratic-method <idea> [--mode stress|develop] [--depth quick|standard|deep]
-```
+
+`--mode` and `--depth` are read by you from the prompt text — no platform parses them as
+flags. Treat them as present in any form the user writes them, and fall back to the Setup
+turn below when they are absent.
 
 - **mode** — the questioning stance:
   - `stress` (classic elenchus): hunt for contradictions and counterexamples; refuting the
@@ -339,9 +362,9 @@ build on yet.
   scope and source selection.
 - **Chained by another skill:** another skill may *tell the user* to run `/socratic-method`
   first when its own input is fuzzy — it cannot invoke this skill itself on platforms that
-  honor `disable-model-invocation` (Claude Code, Copilot VS Code/CLI); Codex enforces the
-  equivalent policy through its own `agents/openai.yaml` sidecar. Control returns once the
-  user runs it and the brief exists.
+  honor `disable-model-invocation` (Claude Code, VS Code); Codex enforces the equivalent
+  policy through its own `agents/openai.yaml` sidecar. Control returns once the user runs
+  it and the brief exists.
 
 ## Guardrails
 
