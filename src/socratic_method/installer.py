@@ -208,8 +208,63 @@ def skill_dir(platform: Platform, scope: str, root: Path, home: Path) -> Path:
     return (root if scope == "project" else home) / rel / SKILL_NAME
 
 
+_MANUAL_ONLY_KEY = "disable-model-invocation"
+
+_WORKAROUND_BANNER = """\
+# COPILOT CLI WORKAROUND INSTALL — this copy is NOT the packaged skill.
+# `disable-model-invocation` has been removed, because GitHub Copilot CLI drops skills
+# that carry it entirely: even an explicit /socratic-method returned "Skill not found"
+# while `copilot skill list` still showed the skill. Reported as
+# github/copilot-cli#4438; Claude Code, VS Code Copilot and Codex are unaffected.
+# The cost of this workaround: on THIS install the model may auto-invoke the skill.
+# Reinstall without --copilot-cli-workaround once the upstream bug is fixed.
+"""
+
+
+def cli_workaround_content(rel: str) -> bytes:
+    """Packaged content with the manual-only key removed, for the Copilot CLI workaround.
+
+    GitHub Copilot CLI 1.0.79 drops a skill carrying ``disable-model-invocation``
+    entirely — even an explicit ``/socratic-method`` returns ``Skill not found``, while
+    ``copilot skill list`` still shows it. That contradicts GitHub's own bundled docs
+    (``disable-model-invocation: true`` => slash command yes, auto-load no) and its own
+    SDK 1.0.39, which resolves explicit invocations against the *unfiltered* skill list.
+    It is a regression, reported as github/copilot-cli#4438, and it affects the CLI only —
+    Claude Code, VS Code Copilot and Codex all behave correctly.
+
+    Removing the key restores reachability at the cost of the guarantee: on that install
+    the model may auto-invoke the skill. Hence opt-in, never a default.
+    """
+    content = packaged_content(rel)
+    if rel != "SKILL.md":
+        return content
+    text = content.decode("utf-8")
+    head, fence, body = text.partition("\n---\n")  # frontmatter only; never touch the body
+    lines = head.splitlines()
+    key = next(
+        (i for i, ln in enumerate(lines) if ln.startswith(f"{_MANUAL_ONLY_KEY}:")),
+        None,
+    )
+    if key is None:  # key already absent — nothing to work around
+        return content
+    # Take the contiguous comment block directly above the key with it. Those comments
+    # exist to explain that key; leaving prose describing a key the file no longer has
+    # is its own kind of lie. Structural rather than keyword-matched, so rewording the
+    # comments cannot silently orphan half of them.
+    start = key
+    while start > 0 and lines[start - 1].lstrip().startswith("#"):
+        start -= 1
+    kept = lines[:start] + _WORKAROUND_BANNER.splitlines() + lines[key + 1 :]
+    return ("\n".join(kept) + fence + body).encode("utf-8")
+
+
 def file_state(target: Path, rel: str) -> str:
-    """One managed file's state: 'missing' | 'up-to-date' | 'differs'."""
+    """One managed file's state: 'missing' | 'up-to-date' | 'differs'.
+
+    A file matching the CLI-workaround variant counts as up-to-date: it is a supported
+    install shape, not a local edit, so `status` must not cry "modified" at it and the
+    next `setup` must not need --force.
+    """
     dst = target / rel
     try:
         if not dst.is_file():
@@ -220,7 +275,10 @@ def file_state(target: Path, rel: str) -> str:
         # parent dir). Treat that as differing so status() can report it and install()
         # routes through --force — never an uncaught OSError that crashes every caller.
         return "differs"
-    return "up-to-date" if _digest(current) == _digest(packaged_content(rel)) else "differs"
+    digest = _digest(current)
+    if digest == _digest(packaged_content(rel)):
+        return "up-to-date"
+    return "up-to-date" if digest == _digest(cli_workaround_content(rel)) else "differs"
 
 
 def install_state(target: Path) -> str:
@@ -312,10 +370,14 @@ def install(
     force: bool = False,
     dry_run: bool = False,
     copy: bool = False,
+    cli_workaround: bool = False,
 ) -> Action:
     platform = _resolve_platform(platform_key)
     target = skill_dir(platform, scope, root, home)
     state = install_state(target)
+    # The workaround rewrites SKILL.md, so it cannot be a symlink to the packaged asset —
+    # writing through one would strip the key from the package itself, for every install.
+    copy = copy or cli_workaround
 
     # Dedupe: another platform's install in the same scope may sit in a directory this
     # platform also reads, in which case installing again registers the skill twice with
@@ -358,8 +420,13 @@ def install(
         )
     if dry_run:
         mode = "copies" if copy else "symlinks"
+        note = ", disable-model-invocation stripped" if cli_workaround else ""
         return Action(
-            platform_key, scope, target, "would-install", f"{len(MANAGED_FILES)} files ({mode})"
+            platform_key,
+            scope,
+            target,
+            "would-install",
+            f"{len(MANAGED_FILES)} files ({mode}){note}",
         )
 
     linked, copied = [], []
@@ -378,7 +445,9 @@ def install(
                     continue
                 except OSError:  # e.g. a filesystem/OS that forbids symlinks
                     pass
-            dst.write_bytes(packaged_content(rel))
+            dst.write_bytes(
+                cli_workaround_content(rel) if cli_workaround else packaged_content(rel)
+            )
             copied.append(rel)
         except OSError as e:
             # A path occupied by an incompatible node (a directory where a file must go,
@@ -406,12 +475,18 @@ def install(
         parts.append(f"{len(linked)} symlinked")
     if copied:
         parts.append(f"{len(copied)} copied")
+    note = (
+        " — disable-model-invocation STRIPPED for the Copilot CLI bug (#4438): the skill "
+        "is reachable there again, but the model may now auto-invoke it"
+        if cli_workaround
+        else ""
+    )
     return Action(
         platform_key,
         scope,
         target,
         "installed",
-        f"{' + '.join(parts)}, read back and verified",
+        f"{' + '.join(parts)}, read back and verified{note}",
     )
 
 
