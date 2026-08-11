@@ -77,7 +77,10 @@ jobs:
         with:
           name: dist
           path: dist/
-      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.1 (release/v1)
+      # Pinned to release/v1, so the trailing comment is NOT maintained by Dependabot
+      # the way the tag-tracked pins are — verify it by hand against the SHA's tag when
+      # this line changes, or the comment silently stops describing the pin.
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2 (release/v1)
 
   github-release:
     # Gated on the PyPI publish (see header comment): the GitHub Release only
