@@ -17,7 +17,8 @@ not fixed until something durable changes — a grader, a scenario, or a rail in
 ```text
 src/socratic_method/           the package: cli.py, installer.py, validator.py
 src/socratic_method/assets/    THE PRODUCT: SKILL.md, example-session, idea-brief schema
-evals/                         7-cell behavioral eval harness (run_eval.py, graders, rubric)
+evals/                         7-cell behavioral harness (run_eval.py, Claude-only) plus
+                               run_smoke.py (cross-platform contract probes)
 evals/fixtures/                golden valid brief (load-bearing for tests + CI smoke)
 tests/                         pytest suite (validator mutations, installer, detection, CLI, asset invocation-policy, eval graders)
 .claude/skills/                maintainer skills for developing THIS repo (e.g. /release)
@@ -121,7 +122,24 @@ silent edit of v1 (the version lives in the `schema` const and the filename).
 python evals/run_eval.py --dry-run      # list cells, zero model calls
 python evals/run_eval.py --cell O1      # one cell (repeatable flag)
 python evals/run_eval.py                # full matrix — ~30-60 headless `claude` calls
+python evals/run_smoke.py --dry-run     # cross-platform contract tier, zero model calls
+python evals/run_smoke.py --platform codex   # 2 headless calls per platform
 ```
+
+Two tiers that measure different things — do not conflate them:
+
+- `run_eval.py` is the **behavioral** matrix and is **Claude-Code-only by construction**
+  (`claude -p`, Claude's stream-json, `.claude/skills`). A green matrix is evidence about
+  Claude Code and says nothing about Codex or Copilot.
+- `run_smoke.py` is the **contract** tier across all three platforms: an explicit
+  invocation must load `SKILL.md` from the installer's own directory, and a
+  description-matching prompt must not auto-invoke it. It grades no questioning behavior.
+  Probes are three-state — a run that never reached the model (spend limit, auth) is
+  `ERROR`, never `PASS`, and `ERROR` fails the exit code. `_install()` git-inits the
+  sandbox because Codex resolves its REPO skill scopes against a repository root, and it
+  copies the working tree (like `run_eval.py`) so uncommitted asset edits are tested.
+  Probing "is the skill in your list" does NOT work — a manual-only skill is deliberately
+  absent from that list; probe by invoking it and reading back the loaded path.
 
 - Requires an authenticated `claude` CLI; model choice is flags-only
   (`--model`/`--sim-model`/`--judge-model`, defaults sonnet/sonnet/opus). No env vars.

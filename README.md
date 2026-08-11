@@ -242,6 +242,30 @@ passes only when **all** deterministic graders pass AND the judge confirms the e
 behavior with no fabrication and no premature solutioning, AND the brief stayed inside its
 sandbox (no harness leak).
 
+**This matrix measures Claude Code only** — it drives `claude -p`, parses Claude's
+stream-json, and installs into `.claude/skills`. Treat a green matrix as evidence about
+Claude Code, never as evidence about Codex or Copilot.
+
+### Cross-platform smoke tier (`evals/run_smoke.py`)
+
+The cheap complement: two probes per platform, checking the *contract* rather than the
+behavior — (1) an explicit invocation loads `SKILL.md` from the directory this installer
+writes to, and (2) a prompt matching the skill's description does **not** auto-invoke it.
+
+```bash
+python evals/run_smoke.py --dry-run           # list the plan, no calls
+python evals/run_smoke.py --platform codex    # one platform (repeatable)
+python evals/run_smoke.py                     # every platform whose CLI is on PATH
+```
+
+Needs each platform's CLI authenticated; 2 headless calls per platform. A probe that never
+reached the model is reported as `ERROR`, not `PASS` — an ungraded probe leaves the
+platform unverified, and calling that success is the fabrication mode this project exists
+to prevent. Like the rest of `evals/`, it must never run in CI.
+
+It does **not** grade questioning behavior — no turn discipline, no stop signal, no verdict
+honesty. Those need a scripted multi-turn simulator and stay in `run_eval.py`.
+
 ## Contributing
 
 Development setup, the test/lint loop, and the PyPI release process live in

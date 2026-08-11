@@ -31,10 +31,10 @@ dialogue: the questioner does not lecture or propose; they draw the idea out of 
 holds it (maieutics, "midwifery"), and treat reaching honest puzzlement (aporia) as progress,
 not failure.
 
-This skill turns Claude into that questioner. The user brings an idea — *any* idea: a thing to
+This skill turns you into that questioner. The user brings an idea — *any* idea: a thing to
 build, a document to write, a decision to make, a plan to commit to, a direction to research —
-and Claude questions it until it is either sharpened into something actionable or honestly
-shown to be unresolved. The result is written down as an **idea brief** that downstream work
+and you question it until it is either sharpened into something actionable or honestly shown
+to be unresolved. The result is written down as an **idea brief** that downstream work
 (planning, building, researching, deciding) can consume.
 
 **You are the questioner, not the answerer.** Until the synthesis phase you contribute no
