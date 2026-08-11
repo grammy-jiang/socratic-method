@@ -98,13 +98,28 @@ class Runner:
         return argv + ([self.model_flag, chosen] if chosen else [])
 
 
+# Each runner excludes the operator's own user-level configuration, for the reason
+# spelled out in run_eval.py: a hook or custom instruction on the developer's machine is
+# injected into the probe and the tier ends up measuring the machine, not the skill. The
+# flags differ per vendor and none of them touches authentication:
+#   claude   --setting-sources project,local   (drops ~/.claude hooks, output style, memory)
+#   codex    --ignore-user-config              (drops $CODEX_HOME/config.toml; auth kept)
+#   copilot  --no-custom-instructions          (drops user custom instructions)
 RUNNERS: dict[str, Runner] = {
     "claude": Runner(
         key="claude",
         cli="claude",
         # Same tool grant shape as run_eval.py's examiner, minus Edit: these probes
         # must be able to load a skill and read files, nothing more.
-        argv=("claude", "-p", "{prompt}", "--allowedTools", "Skill,Read"),
+        argv=(
+            "claude",
+            "-p",
+            "{prompt}",
+            "--allowedTools",
+            "Skill,Read",
+            "--setting-sources",
+            "project,local",
+        ),
         invoke=f"/{SKILL_NAME}",
         default_model="sonnet",
     ),
@@ -114,7 +129,15 @@ RUNNERS: dict[str, Runner] = {
         # --skip-git-repo-check keeps the runner honest if the sandbox is ever not a
         # repo; _install() git-inits it, because Codex's documented REPO scopes are
         # relative to a repository root and users run agents inside repos.
-        argv=("codex", "exec", "--skip-git-repo-check", "-s", "read-only", "{prompt}"),
+        argv=(
+            "codex",
+            "exec",
+            "--skip-git-repo-check",
+            "--ignore-user-config",
+            "-s",
+            "read-only",
+            "{prompt}",
+        ),
         invoke=f"${SKILL_NAME}",
         model_flag="-m",
     ),
@@ -122,7 +145,14 @@ RUNNERS: dict[str, Runner] = {
         key="copilot",
         cli="copilot",
         # --allow-all-tools is required for non-interactive mode per `copilot --help`.
-        argv=("copilot", "-p", "{prompt}", "--allow-all-tools", "--no-color"),
+        argv=(
+            "copilot",
+            "-p",
+            "{prompt}",
+            "--allow-all-tools",
+            "--no-color",
+            "--no-custom-instructions",
+        ),
         invoke=f"Use the /{SKILL_NAME} skill.",
     ),
 }

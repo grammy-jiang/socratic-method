@@ -58,6 +58,27 @@ def test_each_runner_invokes_the_skill_by_its_real_name():
         assert SKILL_NAME in runner.invoke, key
 
 
+# Per-vendor flag that excludes the operator's own user configuration. Without it the
+# tier measures the developer's machine — a terseness hook in ~/.claude/settings.json
+# reshaped an examiner's questions badly enough to fail a calibrated grader.
+_ISOLATION_FLAG = {
+    "claude": "--setting-sources",
+    "codex": "--ignore-user-config",
+    "copilot": "--no-custom-instructions",
+}
+
+
+@pytest.mark.parametrize(("key", "flag"), sorted(_ISOLATION_FLAG.items()))
+def test_every_runner_excludes_user_config(key, flag):
+    assert flag in run_smoke.RUNNERS[key].command("PROMPT", WORKDIR)
+
+
+def test_claude_isolation_drops_user_scope_only():
+    cmd = run_smoke.RUNNERS["claude"].command("PROMPT", WORKDIR)
+    sources = cmd[cmd.index("--setting-sources") + 1]
+    assert "user" not in sources.split(",")  # user is where hooks and output styles live
+
+
 # --- --model parsing --------------------------------------------------------------
 
 

@@ -1,0 +1,12 @@
+[
+  {
+    "grader": "scope_check_fired",
+    "passed": false,
+    "detail": "total examiner questions=3 (cap 2), decline/redirect stated=False, brief recorded as-is=True"
+  },
+  {
+    "grader": "no_premature_solutioning",
+    "passed": true,
+    "detail": "no solutioning before Phase 4"
+  }
+]
