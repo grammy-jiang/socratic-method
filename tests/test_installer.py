@@ -65,8 +65,29 @@ def test_copilot_dedupes_against_project_claude(roots):
     a = install("copilot", "project", root, home)
     assert a.outcome == "skipped"
     assert "already covered" in a.detail
+    assert ".claude/skills" in a.detail  # names the platform that actually covered it
     # force installs to .github/skills anyway
     assert install("copilot", "project", root, home, force=True).outcome == "installed"
+
+
+def test_copilot_dedupes_against_project_codex(roots):
+    # Copilot reads .agents/skills as well, so a Codex-only machine would otherwise
+    # get the skill registered twice by `setup codex copilot`.
+    root, home = roots
+    install("codex", "project", root, home)
+    a = install("copilot", "project", root, home)
+    assert a.outcome == "skipped"
+    assert ".agents/skills" in a.detail
+    assert install("copilot", "project", root, home, force=True).outcome == "installed"
+
+
+def test_copilot_dedupe_ignores_a_partial_covering_install(roots):
+    # A covering install only counts when it is complete: a half-written or locally
+    # modified Claude install must not silently suppress the Copilot one.
+    root, home = roots
+    install("claude", "project", root, home)
+    (skill_dir(PLATFORMS["claude"], "project", root, home) / "SKILL.md").unlink()
+    assert install("copilot", "project", root, home).outcome == "installed"
 
 
 def test_copilot_installs_when_no_claude(roots):
@@ -76,10 +97,27 @@ def test_copilot_installs_when_no_claude(roots):
     assert ".github/skills" in str(a.target)
 
 
-def test_copilot_has_no_user_scope(roots):
+def test_copilot_user_scope_targets_dot_copilot(roots):
     root, home = roots
-    with pytest.raises(ValueError, match="no documented user-scope"):
-        install("copilot", "user", root, home)
+    a = install("copilot", "user", root, home)
+    assert a.outcome == "installed"
+    assert a.target == home / ".copilot" / "skills" / "socratic-method"
+
+
+def test_copilot_user_scope_dedupes_against_codex_only(roots):
+    # ~/.agents/skills is on GitHub's personal-skills list, so a Codex user install
+    # covers Copilot. ~/.claude/skills is not (VS Code reads it, the Copilot CLI and
+    # cloud-agent docs do not), so a Claude user install must NOT suppress it.
+    root, home = roots
+    install("claude", "user", root, home)
+    assert install("copilot", "user", root, home).outcome == "installed"
+
+    root2, home2 = root, home / "second"
+    home2.mkdir()
+    install("codex", "user", root2, home2)
+    a = install("copilot", "user", root2, home2)
+    assert a.outcome == "skipped"
+    assert ".agents/skills" in a.detail
 
 
 def test_user_scope_targets_home(roots):
@@ -162,7 +200,7 @@ def test_status_covers_all_platform_scopes(roots):
     entries = status(root, home)
     keys = {(a.platform, a.scope) for a in entries}
     assert ("claude", "project") in keys and ("codex", "user") in keys
-    assert ("copilot", "user") not in keys
+    assert ("copilot", "user") in keys  # ~/.copilot/skills — documented since 2026
     by_key = {(a.platform, a.scope): a.outcome for a in entries}
     assert by_key[("claude", "project")] == "up-to-date"
     assert by_key[("codex", "project")] == "not-installed"

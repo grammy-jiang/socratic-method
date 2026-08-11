@@ -1,0 +1,37 @@
+[
+  {
+    "role": "examiner",
+    "turn": 1,
+    "text": "I'll start by restating the idea to make sure I've got it right before questioning it.\n\nOne housekeeping note first: I'll save a running draft as we go (in case we get interrupted), but only the final brief at the end is the actual verdict — don't take an in-progress save as the answer.\n\nHere's how I understand your idea, stated as strongly as I can:\n\n> **You want to write an internal blog post making the case that your team (or org) should move to trunk-based development** — i.e., you already believe this is the right call, and the post's job is to persuade skeptical colleagues, not to explore whether it's true.\n\nIs that restatement right, or would you correct any part of it — especially whether you're already convinced, or still working out your own position as you write?"
+  },
+  {
+    "role": "user",
+    "turn": 1,
+    "text": "Yep, that's right — I'm already sold on trunk-based development, this isn't me thinking out loud. I've watched feature branches sit around for two weeks and then blow up on merge, and I've got two concrete incidents to point to where that caused real pain. The post is meant to convince the skeptics, especially QA, who I know are going to push back about losing their release branches."
+  },
+  {
+    "role": "examiner",
+    "turn": 2,
+    "text": "Now let's dig into the case itself. A few things, all connected: What exactly is the ask you want readers to walk away agreeing to — literal direct-to-main commits with feature flags, or something looser like short-lived branches merged within a day or two? And of your two incidents, what actually happened when the merge \"blew up\" — was it a conflict nightmare, a broken build that shipped, something QA had already signed off on becoming invalid? Related to that: what do release branches currently give QA — a stable thing to run regression against, a gate before prod, something else — that you'll need to answer for if they go away?"
+  },
+  {
+    "role": "user",
+    "turn": 2,
+    "text": "Direct-to-main with feature flags is more than I'm asking for — I'm pushing for short-lived branches, merged within a day, max two. On the first incident, it wasn't a conflict, it was worse: two people had been quietly touching the same service layer for over a week, and when it finally merged the build broke in a way that wasn't obvious in review, and it shipped broken to prod before anyone caught it. The second one was a conflict nightmare that ate most of a day to untangle, but nothing shipped broken that time. As for QA — yeah, release branches are their stability anchor right now, they cut one, run their regression pass against it, and treat it as the gate before prod. I know I have to tell them what replaces that, and my answer is feature flags plus a stronger CI gate on main, but I haven't fully fleshed that part out yet, which is honestly the part of this post I'm least confident about."
+  },
+  {
+    "role": "examiner",
+    "turn": 3,
+    "text": "Two things worth pressure-testing before this goes into a post aimed at QA. First, on incident one — the service-layer collision that shipped broken: would merging within a day actually have surfaced that problem before it shipped, or was \"not obvious in review\" really a testing/CI gap that would've bitten you the same way even on short branches? Put another way, is trunk-based development the fix for that incident, or is a stronger CI gate the fix and the branch-length change is beside the point there? Second, since you said the feature-flags-plus-CI-gate answer is the part you're least sure about — what would that CI gate actually need to verify to give QA the same confidence their regression pass gives them today: the same tests run earlier, broader coverage than exists now, or something you haven't defined yet?"
+  },
+  {
+    "role": "user",
+    "turn": 3,
+    "text": "On the merge-broken-build one — honestly, yeah, that's a fair hit. Looking back, the collision itself would still have happened with day-long branches, and what actually let it ship was that CI didn't catch it, not that the branches were long. So I think that incident argues for a stronger gate on main more than it argues for trunk-based specifically — I'll probably reframe it in the post as \"here's what a real CI gate has to catch\" rather than leading with it as the trunk-based case. The conflict-nightmare incident is still squarely a branch-age problem though, that one holds up.\n\nOn the CI gate itself — least fleshed out, you're right. My rough answer is it needs to run the same test suite QA runs in their regression pass, just on every merge to main instead of once at the end, plus some kind of smoke/integration layer so a broken build can't sit on main un-caught the way it did in incident one. Whether that's actually equivalent to what QA's regression pass catches today, I haven't verified — that's homework I still owe before I can credibly tell them they're not losing coverage."
+  },
+  {
+    "role": "examiner",
+    "turn": 4,
+    "text": "Read back confirmed — every required key is present and enum-valid, `verdict: aporia` has a non-empty `open_questions`, `questions_asked: 5` is ≥ the 5 distinct `types_used`, and `verdict_final` is `true`.\n\n**Saved to `notes/idea-briefs/trunk-based-development-blog-post-20260811.md`. Verdict: aporia** — the branch-length ask (short-lived, 1-2 days) is solid, but the specific claim you need to win QA over (that a CI gate gives them equivalent coverage to their regression pass) is still unverified.\n\nTwo things worth carrying forward:\n- Your own best evidence split under questioning — only the merge-conflict incident actually argues for trunk-based; the broken-build incident argues for a stronger CI gate, and the post should frame it that way rather than as trunk-based evidence.\n- The one open question is the whole ballgame for QA specifically: does the proposed CI gate (full regression suite on every merge + smoke/integration layer) really catch what their regression pass catches today? That's worth checking with QA or against test coverage data before you draft the section that makes that promise to them."
+  }
+]

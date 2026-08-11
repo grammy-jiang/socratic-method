@@ -1,7 +1,10 @@
 """Agent auto-detection: each signal produces evidence; absence produces None."""
 
+import os
 import stat
 from pathlib import Path
+
+import pytest
 
 from socratic_method.installer import detect_platforms
 
@@ -58,6 +61,18 @@ def test_cli_on_path_wins_over_config_dir(tmp_path):
     assert "config directory" not in d["claude"]
 
 
+def test_copilot_config_dir_detected(tmp_path):
+    # ~/.copilot is where Copilot keeps personal skills, so its presence is a
+    # first-class signal — same rank as ~/.claude and ~/.codex.
+    home = tmp_path / "home"
+    (home / ".copilot").mkdir(parents=True)
+    empty_bin = tmp_path / "bin"
+    empty_bin.mkdir()
+    d = detect_platforms(home, path_env=str(empty_bin))
+    assert "config directory" in d["copilot"]
+    assert str(home / ".copilot") in d["copilot"]
+
+
 def test_copilot_editor_extensions_detected(tmp_path):
     empty_bin = tmp_path / "bin"
     empty_bin.mkdir()
@@ -69,4 +84,35 @@ def test_copilot_editor_extensions_detected(tmp_path):
     home_vsc = tmp_path / "home-vsc"
     (home_vsc / ".vscode/extensions/github.copilot-1.250.0").mkdir(parents=True)
     d = detect_platforms(home_vsc, path_env=str(empty_bin))
-    assert "VS Code extension github.copilot-1.250.0" in d["copilot"]
+    assert "editor extension .vscode/github.copilot-1.250.0" in d["copilot"]
+
+
+@pytest.mark.skipif(
+    getattr(os, "geteuid", lambda: 1)() == 0,
+    reason="root bypasses directory permissions, so the unreadable dir would be readable",
+)
+def test_detection_survives_an_unreadable_extensions_dir(tmp_path):
+    # Detection runs before every `setup`; an unreadable directory must read as
+    # "no evidence", never as an OSError that takes the whole command down.
+    empty_bin = tmp_path / "bin"
+    empty_bin.mkdir()
+    home = tmp_path / "home"
+    locked = home / ".vscode" / "extensions"
+    locked.mkdir(parents=True)
+    locked.chmod(0o000)
+    try:
+        assert detect_platforms(home, path_env=str(empty_bin))["copilot"] is None
+    finally:
+        locked.chmod(0o700)  # let tmp_path cleanup succeed
+
+
+@pytest.mark.parametrize("rel", [".vscode-insiders", ".vscode-server", ".vscode-oss", ".vscodium"])
+def test_copilot_detected_in_vscode_variants(tmp_path, rel):
+    # A machine with only Insiders, a remote/server install, or VSCodium still has
+    # Copilot; detecting only ~/.vscode reported "not detected" and installed nothing.
+    empty_bin = tmp_path / "bin"
+    empty_bin.mkdir()
+    home = tmp_path / rel.lstrip(".")
+    (home / rel / "extensions/github.copilot-chat-2.0.1").mkdir(parents=True)
+    d = detect_platforms(home, path_env=str(empty_bin))
+    assert f"editor extension {rel}/github.copilot-chat-2.0.1" == d["copilot"]

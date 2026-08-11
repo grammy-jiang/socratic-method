@@ -5,3 +5,12 @@
 # (disable-model-invocation: true), which Codex ignores.
 policy:
   allow_implicit_invocation: false
+
+# Because implicit invocation is off, the Codex `/skills` picker and the ChatGPT
+# app are the entire discovery surface for this skill. Without an interface block
+# they fall back to the SKILL.md `description`, which is ~700 characters of
+# trigger-matching text written for a model, not for a human scanning a list.
+interface:
+  display_name: "Socratic Method"
+  short_description: "Questions your idea until its assumptions, contradictions and gaps surface, then writes an idea brief."
+  default_prompt: "Question me about this idea before I start work on it: "

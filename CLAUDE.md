@@ -17,7 +17,8 @@ not fixed until something durable changes — a grader, a scenario, or a rail in
 ```text
 src/socratic_method/           the package: cli.py, installer.py, validator.py
 src/socratic_method/assets/    THE PRODUCT: SKILL.md, example-session, idea-brief schema
-evals/                         7-cell behavioral eval harness (run_eval.py, graders, rubric)
+evals/                         7-cell behavioral harness (run_eval.py, Claude-only) plus
+                               run_smoke.py (cross-platform contract probes)
 evals/fixtures/                golden valid brief (load-bearing for tests + CI smoke)
 tests/                         pytest suite (validator mutations, installer, detection, CLI, asset invocation-policy, eval graders)
 .claude/skills/                maintainer skills for developing THIS repo (e.g. /release)
@@ -30,11 +31,21 @@ paths are data-driven in `installer.py`'s `PLATFORMS` dict; the managed files ar
 agents/openai.yaml.
 
 The skill is **manual-invocation-only** by policy, encoded in two places that must stay
-in sync (pinned by `tests/test_assets.py`): `disable-model-invocation: true` in SKILL.md
-frontmatter (honored by Claude Code and by Copilot in VS Code agent mode + CLI; ignored
-by Codex) and `agents/openai.yaml` with `policy.allow_implicit_invocation: false` (the
-Codex equivalent; other platforms never read it). Known gap: the Copilot cloud coding
-agent documents no user-only mechanism and may still auto-invoke.
+in sync (pinned by `tests/test_assets.py`): SKILL.md frontmatter
+(`disable-model-invocation: true` + `user-invocable: true`) and `agents/openai.yaml`
+(`policy.allow_implicit_invocation: false`, the Codex equivalent — Codex reads no
+frontmatter key beyond name/description). Support is **not uniform**, and the README's
+per-platform table is the authoritative statement of it: documented on Claude Code, VS
+Code and Codex; **broken on Copilot CLI**, where the key removes the skill from the model
+entirely so even explicit invocation fails (measured on 1.0.79 — see issue #18);
+**absent on the Copilot cloud agent**, which may still auto-invoke.
+`disable-model-invocation` is a client extension, not part of the agentskills.io spec —
+never restate the guarantee as one flat claim, and never assume a client implements it
+with Claude Code's semantics.
+
+`allowed-tools` also diverges: a restriction on Claude Code, a **pre-approval** list on
+Copilot (listed tools skip the confirmation prompt), unread on Codex. Hence the rail in
+`tests/test_assets.py` — it may never grow a shell/bash-family tool.
 
 ## Dev loop
 
@@ -78,9 +89,11 @@ CLI behavior worth remembering: `setup` symlinks the packaged assets by default
 also switches an existing install between modes). `setup` with no targets auto-detects
 and exits 1 if nothing is detected, but `remove` (canonical name; `uninstall` is the
 alias) with no targets expands to ALL platforms — and removes managed files even if
-locally modified, plus dangling symlinks. Copilot has no user scope (`user_dir=None`),
-and project-scope Copilot is skipped when `.claude/skills/` already covers the repo
-(Copilot reads that path too). Never write through an installed symlink in code or
+locally modified, plus dangling symlinks. Copilot reads other agents' skill dirs, so its
+install is skipped when a covering one exists — data-driven via `Platform.covered_by_*`:
+project scope is covered by Claude (`.claude/skills`) or Codex (`.agents/skills`), user
+scope by Codex only (`~/.agents/skills`; `~/.claude/skills` is VS Code-only, and skipping
+on it would leave Copilot CLI users with nothing). Never write through an installed symlink in code or
 tests — it edits the packaged asset itself (`install()` unlinks before writing for
 exactly this reason; `tests/test_installer.py` pins it).
 
@@ -111,8 +124,43 @@ silent edit of v1 (the version lives in the `schema` const and the filename).
 python evals/run_eval.py --dry-run      # list cells, zero model calls
 python evals/run_eval.py --cell O1      # one cell (repeatable flag)
 python evals/run_eval.py                # full matrix — ~30-60 headless `claude` calls
+python evals/run_smoke.py --dry-run     # cross-platform contract tier, zero model calls
+python evals/run_smoke.py --platform codex   # 2 headless calls per platform
 ```
 
+Two tiers that measure different things — do not conflate them:
+
+- `run_eval.py` is the **behavioral** matrix and is **Claude-Code-only by construction**
+  (`claude -p`, Claude's stream-json, `.claude/skills`). A green matrix is evidence about
+  Claude Code and says nothing about Codex or Copilot.
+- `run_smoke.py` is the **contract** tier across all three platforms: an explicit
+  invocation must load `SKILL.md` from the installer's own directory, and a
+  description-matching prompt must not auto-invoke it. It grades no questioning behavior.
+  Probe outcomes are five-state: `PASS`/`FAIL`, plus `ERROR` (never reached the model —
+  spend limit, auth; never `PASS`), `XFAIL` (a measured breakage listed in
+  `KNOWN_BREAKAGE`, does not fail the run) and `XPASS` (a known breakage that healed —
+  **fails** the run, because the docs describing it are now stale and must be deleted in
+  the same pass). Add to `KNOWN_BREAKAGE` only with an upstream issue link. `_install()` git-inits the
+  sandbox because Codex resolves its REPO skill scopes against a repository root, and it
+  copies the working tree (like `run_eval.py`) so uncommitted asset edits are tested.
+  Probing "is the skill in your list" does NOT work — a manual-only skill is deliberately
+  absent from that list; probe by invoking it and reading back the loaded path. Model
+  choice is flags-only here too (`--model PLATFORM=NAME`, per-platform because one name is
+  never valid across three vendors); `claude` is pinned to sonnet rather than left to the
+  account default, which can be a premium model with its own spend cap — a probe that dies
+  on "you've hit your monthly spend limit" measures billing, not the skill.
+
+- **Both tiers exclude the operator's user-scope config**, and must keep doing so. The
+  harness otherwise inherits whatever is in `~/.claude/settings.json` — a SessionStart or
+  UserPromptSubmit hook is injected into the examiner *and* the simulator *and* the judge,
+  and an output style or user CLAUDE.md rides along. That is not hypothetical: a terseness
+  hook on the maintainer's machine made an examiner bundle four questions into a
+  quick-depth round and fail `quick_cadence`, with SKILL.md innocent. `run_eval.py` passes
+  `--setting-sources project,local` (`_ISOLATION`) on every role; `run_smoke.py` uses each
+  vendor's own flag. Not `--bare` — it refuses OAuth and demands `ANTHROPIC_API_KEY`.
+  **Before treating any red cell as a behavioral regression, confirm the transcript reads
+  like the committed baselines**; a contaminated report is worse than none, because it
+  reads as real and sends the next person editing the skill.
 - Requires an authenticated `claude` CLI; model choice is flags-only
   (`--model`/`--sim-model`/`--judge-model`, defaults sonnet/sonnet/opus). No env vars.
 - A cell passes only when all deterministic graders pass AND the judge reports

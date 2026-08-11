@@ -10,3 +10,11 @@ evals/reports/*/*/workdir/
 # of the otherwise-committable report dir so a private brief can't be committed by accident.
 evals/reports/**/brief-leaked.md
 notes/
+
+# Installs of the product skill made *inside this repo* (e.g. dogfooding
+# `socratic-method setup`). The canonical source is src/socratic_method/assets/;
+# a committed install copy would silently drift from it. Note .claude/skills/
+# itself is NOT ignored — it holds this repo's maintainer skills (/release).
+.claude/skills/socratic-method/
+.agents/skills/
+.github/skills/
