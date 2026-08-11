@@ -61,10 +61,12 @@ Special properties to know before acting:
 - **Meant to be invoked by hand, never auto-triggered** (`/socratic-method …` in Claude
   Code and Copilot, `$socratic-method` in Codex); it costs zero context tokens until
   invoked. If it seems inactive, that is by design — invoke it explicitly rather than
-  rephrasing the prompt to bait it. **How that is enforced differs per platform, and it
-  is not airtight on Copilot** — see
+  rephrasing the prompt to bait it. **How that is enforced differs per platform: it works
+  on Claude Code, VS Code and Codex; the Copilot cloud agent has no mechanism at all; and
+  on Copilot CLI the enforcement key currently makes the skill unreachable even when named
+  explicitly** ([#18](https://github.com/grammy-jiang/socratic-method/issues/18)). Read
   [How manual-only is enforced](#how-manual-only-is-enforced-per-platform) before relying
-  on it.
+  on any of it.
 - **Output contract:** a session must end with a brief at
   `notes/idea-briefs/<slug>-YYYYMMDD.md` that passes
   `socratic-method validate <file>` (exit 0 = valid; exit 1 prints `ERROR:` lines).
