@@ -71,6 +71,16 @@ def test_codex_sidecar_disables_implicit_invocation():
     assert sidecar["policy"]["allow_implicit_invocation"] is False
 
 
+def test_codex_sidecar_carries_a_human_facing_interface():
+    # With implicit invocation off, the /skills picker is the only way a Codex user
+    # finds this skill, so it must not fall back to the model-facing description.
+    interface = yaml.safe_load(_asset("agents/openai.yaml"))["interface"]
+    assert interface["display_name"]
+    assert interface["default_prompt"]
+    short, long = interface["short_description"], _frontmatter()["description"]
+    assert len(short) < len(long) / 3, "short_description is not meaningfully shorter"
+
+
 def test_codex_sidecar_is_a_managed_file():
     # The sidecar must ship with every install, or Codex installs lose the policy.
     assert "agents/openai.yaml" in MANAGED_FILES
