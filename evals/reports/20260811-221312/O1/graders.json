@@ -1,0 +1,17 @@
+[
+  {
+    "grader": "scope_check_fired",
+    "passed": true,
+    "detail": "total examiner questions=2 (cap 2), decline/redirect stated=True, brief recorded as-is=True"
+  },
+  {
+    "grader": "no_premature_solutioning",
+    "passed": true,
+    "detail": "no solutioning before Phase 4"
+  },
+  {
+    "grader": "quotes_are_verbatim",
+    "passed": true,
+    "detail": "0 quoted span(s), each verbatim within one message"
+  }
+]
