@@ -141,7 +141,11 @@ Two tiers that measure different things — do not conflate them:
   sandbox because Codex resolves its REPO skill scopes against a repository root, and it
   copies the working tree (like `run_eval.py`) so uncommitted asset edits are tested.
   Probing "is the skill in your list" does NOT work — a manual-only skill is deliberately
-  absent from that list; probe by invoking it and reading back the loaded path.
+  absent from that list; probe by invoking it and reading back the loaded path. Model
+  choice is flags-only here too (`--model PLATFORM=NAME`, per-platform because one name is
+  never valid across three vendors); `claude` is pinned to sonnet rather than left to the
+  account default, which can be a premium model with its own spend cap — a probe that dies
+  on "you've hit your monthly spend limit" measures billing, not the skill.
 
 - Requires an authenticated `claude` CLI; model choice is flags-only
   (`--model`/`--sim-model`/`--judge-model`, defaults sonnet/sonnet/opus). No env vars.

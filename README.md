@@ -255,6 +255,7 @@ writes to, and (2) a prompt matching the skill's description does **not** auto-i
 ```bash
 python evals/run_smoke.py --dry-run           # list the plan, no calls
 python evals/run_smoke.py --platform codex    # one platform (repeatable)
+python evals/run_smoke.py --model claude=sonnet   # override one platform's model
 python evals/run_smoke.py                     # every platform whose CLI is on PATH
 ```
 

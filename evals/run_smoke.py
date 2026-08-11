@@ -85,9 +85,17 @@ class Runner:
     cli: str
     argv: tuple[str, ...]  # command template; "{prompt}" is substituted
     invoke: str  # how a user names the skill explicitly on this platform
+    model_flag: str = "--model"
+    # Pinned rather than left to the CLI's own default: an account default can be a
+    # premium model with its own spend cap, and a probe that dies on "you've hit your
+    # monthly spend limit" measures billing, not the skill. Mirrors run_eval.py's
+    # sonnet default. None = accept the CLI's default (no flag passed).
+    default_model: str | None = None
 
-    def command(self, prompt: str, workdir: Path) -> list[str]:
-        return [a.format(prompt=prompt, workdir=workdir) for a in self.argv]
+    def command(self, prompt: str, workdir: Path, model: str | None = None) -> list[str]:
+        argv = [a.format(prompt=prompt, workdir=workdir) for a in self.argv]
+        chosen = model or self.default_model
+        return argv + ([self.model_flag, chosen] if chosen else [])
 
 
 RUNNERS: dict[str, Runner] = {
@@ -98,6 +106,7 @@ RUNNERS: dict[str, Runner] = {
         # must be able to load a skill and read files, nothing more.
         argv=("claude", "-p", "{prompt}", "--allowedTools", "Skill,Read"),
         invoke=f"/{SKILL_NAME}",
+        default_model="sonnet",
     ),
     "codex": Runner(
         key="codex",
@@ -107,6 +116,7 @@ RUNNERS: dict[str, Runner] = {
         # relative to a repository root and users run agents inside repos.
         argv=("codex", "exec", "--skip-git-repo-check", "-s", "read-only", "{prompt}"),
         invoke=f"${SKILL_NAME}",
+        model_flag="-m",
     ),
     "copilot": Runner(
         key="copilot",
@@ -116,6 +126,22 @@ RUNNERS: dict[str, Runner] = {
         invoke=f"Use the /{SKILL_NAME} skill.",
     ),
 }
+
+
+def parse_model_overrides(raw: list[str] | None) -> dict[str, str]:
+    """``["claude=sonnet", "codex=gpt-5.6"]`` -> ``{"claude": "sonnet", ...}``.
+
+    Per-platform because one model name is never valid across three vendors.
+    """
+    overrides = {}
+    for item in raw or []:
+        key, _, value = item.partition("=")
+        if key not in RUNNERS or not value:
+            raise SystemExit(
+                f"--model expects PLATFORM=NAME with PLATFORM in {sorted(RUNNERS)}; got {item!r}"
+            )
+        overrides[key] = value
+    return overrides
 
 
 # A run that never reached the model must not be graded. Without this, a spend-limit or
@@ -171,9 +197,9 @@ def _briefs(workdir: Path) -> list[Path]:
     return sorted(workdir.glob("notes/idea-briefs/*.md"))
 
 
-def probe_discovery(runner: Runner, workdir: Path, target: Path) -> dict:
+def probe_discovery(runner: Runner, workdir: Path, target: Path, model: str | None = None) -> dict:
     prompt = DISCOVERY_PROMPT_TMPL.format(invoke=runner.invoke)
-    out, healthy = _run(runner.command(prompt, workdir), workdir)
+    out, healthy = _run(runner.command(prompt, workdir, model), workdir)
     if not healthy:
         return {"probe": "discovery", "status": "ERROR", "detail": _why(out), "output": out}
     reported = ""
@@ -199,9 +225,9 @@ def probe_discovery(runner: Runner, workdir: Path, target: Path) -> dict:
     }
 
 
-def probe_manual_only(runner: Runner, workdir: Path) -> dict:
+def probe_manual_only(runner: Runner, workdir: Path, model: str | None = None) -> dict:
     before = set(_briefs(workdir))
-    out, healthy = _run(runner.command(BAIT_PROMPT, workdir), workdir)
+    out, healthy = _run(runner.command(BAIT_PROMPT, workdir, model), workdir)
     if not healthy:
         return {"probe": "manual-only", "status": "ERROR", "detail": _why(out), "output": out}
     new_briefs = [p for p in _briefs(workdir) if p not in before]
@@ -228,12 +254,15 @@ def _why(out: str) -> str:
     return "CLI failed or produced no output — probe not graded"
 
 
-def smoke(platform_key: str, keep: bool) -> list[dict]:
+def smoke(platform_key: str, keep: bool, model: str | None = None) -> list[dict]:
     runner = RUNNERS[platform_key]
     workdir = Path(tempfile.mkdtemp(prefix=f"smoke-{platform_key}-"))
     try:
         target = _install(platform_key, workdir)
-        return [probe_discovery(runner, workdir, target), probe_manual_only(runner, workdir)]
+        return [
+            probe_discovery(runner, workdir, target, model),
+            probe_manual_only(runner, workdir, model),
+        ]
     finally:
         if keep:
             print(f"    workdir kept: {workdir}")
@@ -249,10 +278,18 @@ def main(argv: list[str] | None = None) -> int:
         choices=sorted(RUNNERS),
         help="platform to smoke (repeatable; default: every one whose CLI is on PATH)",
     )
+    p.add_argument(
+        "--model",
+        action="append",
+        metavar="PLATFORM=NAME",
+        help="override one platform's model, e.g. --model claude=sonnet (repeatable). "
+        "Flags only, no env vars — same rule as run_eval.py",
+    )
     p.add_argument("--dry-run", action="store_true", help="print the plan, call nothing")
     p.add_argument("--keep-workdir", action="store_true", help="do not delete the sandboxes")
     p.add_argument("--show-output", action="store_true", help="print each probe's raw output")
     args = p.parse_args(argv)
+    models = parse_model_overrides(args.model)
 
     keys = args.platform or [k for k, r in RUNNERS.items() if shutil.which(r.cli)]
     if not keys:
@@ -261,14 +298,18 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"smoke tier — discovery + manual-only, {len(keys) * 2} headless calls")
     for key in keys:
-        print(f"  {key:8s} {RUNNERS[key].cli} -> {PLATFORMS[key].project_dir}/{SKILL_NAME}")
+        model = models.get(key) or RUNNERS[key].default_model or "(CLI default)"
+        print(
+            f"  {key:8s} {RUNNERS[key].cli} -> {PLATFORMS[key].project_dir}/{SKILL_NAME}"
+            f"  model={model}"
+        )
     if args.dry_run:
         return 0
 
     tally = {"PASS": 0, "FAIL": 0, "ERROR": 0}
     for key in keys:
         print(f"\n== {key}")
-        for result in smoke(key, args.keep_workdir):
+        for result in smoke(key, args.keep_workdir, models.get(key)):
             status = result["status"]
             tally[status] += 1
             print(f"  [{status:5s}] {result['probe']:12s} {result['detail']}")

@@ -1,0 +1,22 @@
+[
+  {
+    "role": "examiner",
+    "turn": 1,
+    "text": "Idea: internal blog post arguing for trunk-based dev adoption. Mode develop, depth quick — got both, no setup turn needed.\n\nState idea in one/two sentences, like convincing skeptical friend?"
+  },
+  {
+    "role": "user",
+    "turn": 1,
+    "text": "Two-week-old feature branches keep causing pain — merges turn into archaeology, integration bugs surface late. We should move to trunk-based dev: small commits straight to main, feature flags instead of long branches, catch problems next-day not next-month."
+  },
+  {
+    "role": "examiner",
+    "turn": 2,
+    "text": "Restating: two-week feature branches cause late-surfacing merge/integration pain. Fix: trunk-based dev — small commits to main, feature flags replace long branches, catch problems next-day not next-month. Right?"
+  },
+  {
+    "role": "user",
+    "turn": 2,
+    "text": "Yeah, that's right."
+  }
+]
