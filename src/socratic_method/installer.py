@@ -16,8 +16,8 @@ Design rules (inherited from the skill's own eval-hardened history):
   "installed" is only reported when the read-back matches. A claimed install with
   no verified file is the failure mode this skill exists to prevent.
 
-Platform skill directories (data-driven so corrections are one-line; grounded in the
-platform research of the agent-skills-advisor corpus — see README for caveats):
+Platform skill directories (data-driven so corrections are one-line; each claim below is
+traceable to the vendor doc cited at the end of this docstring, not to prior research):
 
 - Claude Code: ``.claude/skills/`` (project) and ``~/.claude/skills/`` (user).
 - OpenAI Codex: ``.agents/skills/`` (project) and ``~/.agents/skills/`` (user) —
@@ -166,7 +166,11 @@ _VSCODE_EXTENSION_DIRS = (
 def _copilot_extension(home: Path) -> Path | None:
     """Newest installed ``github.copilot*`` extension across the VS Code family."""
     for rel in _VSCODE_EXTENSION_DIRS:
-        if found := sorted((home / rel).glob("github.copilot*")):
+        try:
+            found = sorted((home / rel).glob("github.copilot*"))
+        except OSError:
+            continue  # unreadable dir: absence of evidence, not a reason to crash setup
+        if found:
             return found[-1]
     return None
 

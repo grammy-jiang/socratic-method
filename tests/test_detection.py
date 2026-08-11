@@ -1,5 +1,6 @@
 """Agent auto-detection: each signal produces evidence; absence produces None."""
 
+import os
 import stat
 from pathlib import Path
 
@@ -84,6 +85,25 @@ def test_copilot_editor_extensions_detected(tmp_path):
     (home_vsc / ".vscode/extensions/github.copilot-1.250.0").mkdir(parents=True)
     d = detect_platforms(home_vsc, path_env=str(empty_bin))
     assert "editor extension .vscode/github.copilot-1.250.0" in d["copilot"]
+
+
+@pytest.mark.skipif(
+    getattr(os, "geteuid", lambda: 1)() == 0,
+    reason="root bypasses directory permissions, so the unreadable dir would be readable",
+)
+def test_detection_survives_an_unreadable_extensions_dir(tmp_path):
+    # Detection runs before every `setup`; an unreadable directory must read as
+    # "no evidence", never as an OSError that takes the whole command down.
+    empty_bin = tmp_path / "bin"
+    empty_bin.mkdir()
+    home = tmp_path / "home"
+    locked = home / ".vscode" / "extensions"
+    locked.mkdir(parents=True)
+    locked.chmod(0o000)
+    try:
+        assert detect_platforms(home, path_env=str(empty_bin))["copilot"] is None
+    finally:
+        locked.chmod(0o700)  # let tmp_path cleanup succeed
 
 
 @pytest.mark.parametrize("rel", [".vscode-insiders", ".vscode-server", ".vscode-oss", ".vscodium"])
