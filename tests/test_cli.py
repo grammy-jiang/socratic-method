@@ -1,9 +1,12 @@
 """CLI smoke tests through main(argv)."""
 
+from dataclasses import replace
+
 import pytest
 from conftest import GOLDEN
 
 from socratic_method.cli import main
+from socratic_method.installer import PLATFORMS
 
 
 def test_validate_golden_ok(capsys):
@@ -27,7 +30,7 @@ def test_setup_all_dry_run_and_status(tmp_path, monkeypatch, capsys):
     assert main(["status", "--root", str(tmp_path)]) == 0
     out = capsys.readouterr().out
     assert "agent claude" in out  # status shows detection
-    assert out.count("not-installed") == 5  # 3 project + 2 user scopes; dry-run wrote nothing
+    assert out.count("not-installed") == 6  # 3 project + 3 user scopes; dry-run wrote nothing
 
 
 def test_setup_autodetect_installs_only_detected(tmp_path, monkeypatch, capsys):
@@ -99,10 +102,20 @@ def test_setup_blocked_returns_exit_1(tmp_path, monkeypatch, capsys):
     assert "blocked" in capsys.readouterr().out
 
 
-def test_setup_user_scope_valueerror_returns_exit_1(tmp_path, capsys):
-    # Copilot has no user scope: skill_dir raises ValueError, caught into exit 1.
+def test_setup_user_scope_valueerror_returns_exit_1(tmp_path, monkeypatch, capsys):
+    # A platform with no documented user scope makes skill_dir raise ValueError, which
+    # cli catches into exit 1. Every platform has a user scope now (Copilot gained
+    # ~/.copilot/skills), so the rail is exercised through a stand-in rather than
+    # deleted — it still guards the next platform that ships without one.
+    # HOME is pinned because --root only redirects project scope: a user-scope setup
+    # that does NOT raise would write into the developer's real home directory.
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    (tmp_path / "home").mkdir()
+    no_user_scope = replace(PLATFORMS["copilot"], user_dir=None)
+    monkeypatch.setitem(PLATFORMS, "copilot", no_user_scope)
     assert main(["setup", "copilot", "--scope", "user", "--root", str(tmp_path)]) == 1
     assert "error:" in capsys.readouterr().out
+    assert not (tmp_path / "home" / ".copilot").exists()
 
 
 def test_remove_no_targets_expands_to_all(tmp_path, monkeypatch):

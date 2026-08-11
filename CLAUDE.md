@@ -78,9 +78,11 @@ CLI behavior worth remembering: `setup` symlinks the packaged assets by default
 also switches an existing install between modes). `setup` with no targets auto-detects
 and exits 1 if nothing is detected, but `remove` (canonical name; `uninstall` is the
 alias) with no targets expands to ALL platforms — and removes managed files even if
-locally modified, plus dangling symlinks. Copilot has no user scope (`user_dir=None`),
-and project-scope Copilot is skipped when `.claude/skills/` already covers the repo
-(Copilot reads that path too). Never write through an installed symlink in code or
+locally modified, plus dangling symlinks. Copilot reads other agents' skill dirs, so its
+install is skipped when a covering one exists — data-driven via `Platform.covered_by_*`:
+project scope is covered by Claude (`.claude/skills`) or Codex (`.agents/skills`), user
+scope by Codex only (`~/.agents/skills`; `~/.claude/skills` is VS Code-only, and skipping
+on it would leave Copilot CLI users with nothing). Never write through an installed symlink in code or
 tests — it edits the packaged asset itself (`install()` unlinks before writing for
 exactly this reason; `tests/test_installer.py` pins it).
 

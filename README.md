@@ -126,7 +126,7 @@ printing the concrete evidence for each detection (never a bare claim):
 |---|---|
 | Claude Code | `claude` CLI on PATH; else `~/.claude/` config directory |
 | OpenAI Codex | `codex` CLI on PATH; else `~/.codex/` config directory |
-| GitHub Copilot | `copilot` CLI on PATH; else `gh-copilot` extension; else a `github.copilot*` VS Code extension |
+| GitHub Copilot | `copilot` CLI on PATH; else `~/.copilot/` config directory; else `gh-copilot` extension; else a `github.copilot*` extension under `~/.vscode`, `~/.vscode-insiders`, `~/.vscode-server`, `~/.vscode-oss` or `~/.vscodium` |
 
 If nothing is detected, `setup` installs nothing and tells you how to name targets
 explicitly. `setup all` bypasses detection.
@@ -152,11 +152,20 @@ every write **reads the files back from disk before reporting success** — the 
 |---|---|---|
 | Claude Code | `<root>/.claude/skills/socratic-method/` | `~/.claude/skills/socratic-method/` |
 | OpenAI Codex | `<root>/.agents/skills/socratic-method/` | `~/.agents/skills/socratic-method/` |
-| GitHub Copilot | `<root>/.github/skills/socratic-method/` | — |
+| GitHub Copilot | `<root>/.github/skills/socratic-method/` | `~/.copilot/skills/socratic-method/` |
 
-Copilot also reads a repo's `.claude/skills/`, so if the Claude project install is already
-present, the Copilot step reports "already covered" and skips (a duplicate would trigger
-twice); `--force` installs to `.github/skills/` anyway. Paths live in one data-driven
+Copilot is the one platform that reads *other* agents' directories, so installing it on top
+of another install would register the skill twice with the same agent. The installer skips
+in that case and names the covering install in its output; `--force` installs anyway:
+
+| Scope | Copilot also reads | So it is skipped when installed for |
+|---|---|---|
+| project | `.claude/skills/`, `.agents/skills/` | Claude Code **or** Codex |
+| user | `~/.agents/skills/` | Codex only |
+
+`~/.claude/skills/` is deliberately *not* treated as covering Copilot at user scope: VS Code
+lists it, but GitHub's Copilot CLI and cloud-agent docs do not, and skipping there would
+leave a Copilot CLI user with no skill at all. Paths and coverage live in one data-driven
 registry (`installer.py`) — if a platform moves its skills directory, the fix is one line.
 
 ## Use the skill

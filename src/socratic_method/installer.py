@@ -22,9 +22,15 @@ platform research of the agent-skills-advisor corpus — see README for caveats)
 - Claude Code: ``.claude/skills/`` (project) and ``~/.claude/skills/`` (user).
 - OpenAI Codex: ``.agents/skills/`` (project) and ``~/.agents/skills/`` (user) —
   Codex scans the open Agent Skills directory, not ``.claude/skills``.
-- GitHub Copilot: ``.github/skills/`` (project). Copilot also reads a repo's
-  ``.claude/skills/``, so a project-scope Claude install already covers Copilot;
-  the installer detects that and skips to avoid a double-triggering duplicate.
+- GitHub Copilot: ``.github/skills/`` (project) and ``~/.copilot/skills/`` (user).
+  Copilot reads *three* project directories (``.github/skills``, ``.claude/skills``,
+  ``.agents/skills``) and two personal ones (``~/.copilot/skills``,
+  ``~/.agents/skills``), so a Claude *or* Codex install can already cover it; see
+  ``Platform.covered_by_*`` and ``covering_install``.
+
+Sources, verified 2026-08-11: developers.openai.com/codex/skills,
+docs.github.com Copilot CLI + cloud-agent "add skills", and
+code.visualstudio.com/docs/agent-customization/agent-skills.
 """
 
 from __future__ import annotations
@@ -54,6 +60,25 @@ class Platform:
     label: str
     project_dir: str  # relative to --root
     user_dir: str | None  # relative to ~; None = no user scope documented
+    # Other platform keys whose install directory this platform also reads, per
+    # scope. An up-to-date install for any of them already covers this one, so
+    # installing again would register the skill twice with the same agent.
+    # Kept per-scope because coverage is not symmetric: every Copilot surface
+    # reads a repo's .claude/skills, but GitHub's own CLI and cloud-agent docs
+    # list only ~/.copilot/skills and ~/.agents/skills for personal skills.
+    covered_by_project: tuple[str, ...] = ()
+    covered_by_user: tuple[str, ...] = ()
+
+    def dir_for(self, scope: str) -> str | None:
+        """Skills directory for a scope, relative to --root or ~. None = no such scope."""
+        if scope == "project":
+            return self.project_dir
+        if scope == "user":
+            return self.user_dir
+        raise ValueError(f"unknown scope '{scope}'")
+
+    def covered_by(self, scope: str) -> tuple[str, ...]:
+        return self.covered_by_project if scope == "project" else self.covered_by_user
 
 
 PLATFORMS: dict[str, Platform] = {
@@ -73,7 +98,14 @@ PLATFORMS: dict[str, Platform] = {
         key="copilot",
         label="GitHub Copilot",
         project_dir=".github/skills",
-        user_dir=None,
+        user_dir=".copilot/skills",
+        # Project skills: .github/skills, .claude/skills, .agents/skills.
+        # Personal skills: ~/.copilot/skills, ~/.agents/skills. VS Code also lists
+        # ~/.claude/skills, but the Copilot CLI and cloud-agent docs do not — so
+        # claude does NOT cover copilot at user scope, or a Copilot CLI user would
+        # silently end up with no skill at all.
+        covered_by_project=("claude", "codex"),
+        covered_by_user=("codex",),
     ),
 }
 
@@ -107,14 +139,36 @@ def detect_platforms(home: Path, path_env: str | None = None) -> dict[str, str |
 
     if exe := which("copilot"):
         evidence["copilot"] = f"copilot CLI on PATH ({exe})"
+    elif (home / ".copilot").is_dir():
+        evidence["copilot"] = f"config directory {home / '.copilot'}"
     elif (home / ".local/share/gh/extensions/gh-copilot").is_dir():
         evidence["copilot"] = "gh-copilot extension installed"
-    elif vsix := sorted((home / ".vscode" / "extensions").glob("github.copilot*")):
-        evidence["copilot"] = f"VS Code extension {vsix[-1].name}"
+    elif vsix := _copilot_extension(home):
+        evidence["copilot"] = f"editor extension {vsix.parent.parent.name}/{vsix.name}"
     else:
         evidence["copilot"] = None
 
     return evidence
+
+
+# Extension roots of the VS Code family, in the order they are reported. Stable
+# release first; Insiders, the remote/server install and VSCodium follow, since a
+# machine with only one of those still has Copilot available.
+_VSCODE_EXTENSION_DIRS = (
+    ".vscode/extensions",
+    ".vscode-insiders/extensions",
+    ".vscode-server/extensions",
+    ".vscode-oss/extensions",
+    ".vscodium/extensions",
+)
+
+
+def _copilot_extension(home: Path) -> Path | None:
+    """Newest installed ``github.copilot*`` extension across the VS Code family."""
+    for rel in _VSCODE_EXTENSION_DIRS:
+        if found := sorted((home / rel).glob("github.copilot*")):
+            return found[-1]
+    return None
 
 
 def packaged_content(rel: str) -> bytes:
@@ -142,18 +196,12 @@ def _digest(data: bytes) -> str:
 
 def skill_dir(platform: Platform, scope: str, root: Path, home: Path) -> Path:
     """Resolve the target skill directory for a platform+scope."""
-    if scope == "project":
-        base = root / platform.project_dir
-    elif scope == "user":
-        if platform.user_dir is None:
-            raise ValueError(
-                f"{platform.label} has no documented user-scope skills directory; "
-                "use --scope project"
-            )
-        base = home / platform.user_dir
-    else:
-        raise ValueError(f"unknown scope '{scope}'")
-    return base / SKILL_NAME
+    rel = platform.dir_for(scope)  # raises on an unknown scope
+    if rel is None:
+        raise ValueError(
+            f"{platform.label} has no documented user-scope skills directory; use --scope project"
+        )
+    return (root if scope == "project" else home) / rel / SKILL_NAME
 
 
 def file_state(target: Path, rel: str) -> str:
@@ -193,12 +241,23 @@ def has_leftovers(target: Path) -> bool:
         return True
 
 
-def _copilot_covered_by_claude(root: Path, home: Path) -> Path | None:
-    """The Claude project-scope target that already covers a project-scope Copilot install
-    (Copilot reads .claude/skills), or None. One source for both install()'s dedupe and
-    status()'s report, so the write side and the read side never disagree."""
-    claude_target = skill_dir(PLATFORMS["claude"], "project", root, home)
-    return claude_target if install_state(claude_target) == "up-to-date" else None
+def covering_install(
+    platform: Platform, scope: str, root: Path, home: Path
+) -> tuple[Platform, Path] | None:
+    """The first up-to-date install by another platform that already covers this one.
+
+    Returns ``(covering_platform, its_target)``, or None when nothing covers it. One
+    source for both install()'s dedupe and status()'s report, so the write side and the
+    read side never disagree. Coverage itself is data on ``Platform`` (``covered_by_*``).
+    """
+    for key in platform.covered_by(scope):
+        other = PLATFORMS[key]
+        if other.dir_for(scope) is None:  # no such scope for the covering platform
+            continue
+        other_target = skill_dir(other, scope, root, home)
+        if install_state(other_target) == "up-to-date":
+            return other, other_target
+    return None
 
 
 def _resolve_platform(platform_key: str) -> Platform:
@@ -254,27 +313,28 @@ def install(
     target = skill_dir(platform, scope, root, home)
     state = install_state(target)
 
-    # Copilot dedupe: a project-scope Claude install in the same root already covers it —
-    # but ONLY when Copilot itself is absent (no install, no dangling leftovers). An
-    # already-installed or locally-modified Copilot must report its own state
-    # (up-to-date / blocked), matching status(), not be masked as "skipped".
+    # Dedupe: another platform's install in the same scope may sit in a directory this
+    # platform also reads, in which case installing again registers the skill twice with
+    # the same agent. Name the platform that actually covered it — the printed detail has
+    # to stay verifiable, not a bare claim. Applies ONLY when this platform is itself
+    # absent (no install, no dangling leftovers): an already-installed or locally-modified
+    # target must report its own state (up-to-date / blocked), matching status(), not be
+    # masked as "skipped".
     if (
-        platform_key == "copilot"
-        and scope == "project"
-        and not force
+        not force
         and state == "not-installed"
         and not has_leftovers(target)
+        and (covering := covering_install(platform, scope, root, home))
     ):
-        covered_by = _copilot_covered_by_claude(root, home)
-        if covered_by is not None:
-            return Action(
-                platform_key,
-                scope,
-                target,
-                "skipped",
-                f"Copilot reads .claude/skills — already covered by {covered_by} "
-                "(use --force to install to .github/skills anyway)",
-            )
+        other, other_target = covering
+        return Action(
+            platform_key,
+            scope,
+            target,
+            "skipped",
+            f"{platform.label} also reads {other.dir_for(scope)} — already covered by "
+            f"{other_target} (use --force to install to {target} anyway)",
+        )
 
     if state == "up-to-date" and not force:
         # force still rewrites an up-to-date install: it is the way to switch an
@@ -384,18 +444,15 @@ def status(root: Path, home: Path) -> list[Action]:
                 continue
             target = skill_dir(platform, scope, root, home)
             state = install_state(target)
-            # Reflect install()'s Copilot dedupe: a not-installed project Copilot (with no
-            # dangling leftovers) that a Claude install already covers is "skipped", not
+            # Reflect install()'s dedupe: a not-installed target (with no dangling
+            # leftovers) that another platform's install already covers is "skipped", not
             # "not-installed" — so status (read side) agrees with what setup would report.
             if (
-                key == "copilot"
-                and scope == "project"
-                and state == "not-installed"
+                state == "not-installed"
                 and not has_leftovers(target)
+                and (covering := covering_install(platform, scope, root, home))
             ):
-                covered_by = _copilot_covered_by_claude(root, home)
-                if covered_by is not None:
-                    out.append(Action(key, scope, target, "skipped", f"covered by {covered_by}"))
-                    continue
+                out.append(Action(key, scope, target, "skipped", f"covered by {covering[1]}"))
+                continue
             out.append(Action(key, scope, target, state))
     return out
