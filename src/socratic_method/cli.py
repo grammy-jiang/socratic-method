@@ -91,6 +91,14 @@ def main(argv: list[str] | None = None) -> int:
         help="write file copies instead of symlinks (e.g. when committing the skill "
         "directory to a repo, or on filesystems without symlink support)",
     )
+    p_setup.add_argument(
+        "--copilot-cli-workaround",
+        action="store_true",
+        help="strip disable-model-invocation from the installed SKILL.md. GitHub Copilot "
+        "CLI drops skills carrying that key entirely (github/copilot-cli#4438), so this "
+        "makes the skill reachable there — at the cost of letting the model auto-invoke "
+        "it on that install. Implies --copy; add --force to convert an existing install",
+    )
     p_setup.add_argument("--dry-run", action="store_true", help="print the plan, write nothing")
 
     p_status = sub.add_parser("status", help="show install state for every platform and scope")
@@ -161,6 +169,7 @@ def main(argv: list[str] | None = None) -> int:
                     force=args.force,
                     dry_run=args.dry_run,
                     copy=args.copy,
+                    cli_workaround=args.copilot_cli_workaround,
                 )
             else:
                 a = uninstall(key, args.scope, args.root, home, dry_run=args.dry_run)

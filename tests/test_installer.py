@@ -2,6 +2,7 @@
 dedupe, uninstall cleanliness, and user-scope resolution."""
 
 import pytest
+import yaml
 
 from socratic_method.installer import (
     MANAGED_FILES,
@@ -385,3 +386,95 @@ def test_has_leftovers_true_on_oserror(roots, monkeypatch):
 
     monkeypatch.setattr("pathlib.Path.is_symlink", boom)
     assert has_leftovers(target) is True
+
+
+# --- Copilot CLI workaround (github/copilot-cli#4438) -----------------------------
+
+
+def _frontmatter_text(path):
+    return path.read_text(encoding="utf-8").partition("\n---\n")[0]
+
+
+def test_cli_workaround_strips_only_the_manual_only_key(roots):
+    root, home = roots
+    a = install("copilot", "project", root, home, cli_workaround=True)
+    assert a.outcome == "installed"
+    target = skill_dir(PLATFORMS["copilot"], "project", root, home)
+    head = _frontmatter_text(target / "SKILL.md")
+    # The KEY is gone. The banner still names it in prose, on purpose, so the reader
+    # knows what was removed and why — hence a key-line check, not a substring check.
+    assert not any(ln.startswith("disable-model-invocation:") for ln in head.splitlines())
+    assert "COPILOT CLI WORKAROUND INSTALL" in head
+    # Everything else is untouched — a surgical removal, not a rewrite.
+    assert "user-invocable: true" in head
+    assert "allowed-tools:" in head
+    body = (target / "SKILL.md").read_text(encoding="utf-8").partition("\n---\n")[2]
+    assert body == packaged_content("SKILL.md").decode("utf-8").partition("\n---\n")[2]
+    for rel in ("references/example-session.md", "idea-brief-v1.schema.json", "agents/openai.yaml"):
+        assert (target / rel).read_bytes() == packaged_content(rel)
+
+
+def test_cli_workaround_frontmatter_still_parses(roots):
+    # Removing lines from YAML is easy to get subtly wrong (a glued-on banner, an
+    # orphaned comment). The installed file must still be loadable frontmatter.
+    root, home = roots
+    install("copilot", "project", root, home, cli_workaround=True)
+    target = skill_dir(PLATFORMS["copilot"], "project", root, home)
+    head = _frontmatter_text(target / "SKILL.md").removeprefix("---\n")
+    fm = yaml.safe_load(head)
+    assert fm["name"] == "socratic-method"
+    assert fm["user-invocable"] is True
+    assert "disable-model-invocation" not in fm
+
+
+def test_cli_workaround_forces_copies_never_symlinks(roots):
+    # Writing through a symlink would strip the key from the packaged asset itself,
+    # breaking every other install on the machine.
+    root, home = roots
+    a = install("copilot", "project", root, home, cli_workaround=True)
+    assert "symlinked" not in a.detail
+    target = skill_dir(PLATFORMS["copilot"], "project", root, home)
+    assert not (target / "SKILL.md").is_symlink()
+    packaged_head = packaged_content("SKILL.md").decode("utf-8").partition("\n---\n")[0]
+    assert any(ln.startswith("disable-model-invocation:") for ln in packaged_head.splitlines())
+
+
+def test_cli_workaround_install_reads_as_up_to_date(roots):
+    # A supported install shape, not a local edit: status must not cry "modified" and
+    # the next setup must not demand --force.
+    root, home = roots
+    install("copilot", "project", root, home, cli_workaround=True)
+    target = skill_dir(PLATFORMS["copilot"], "project", root, home)
+    assert install_state(target) == "up-to-date"
+    assert install("copilot", "project", root, home, cli_workaround=True).outcome == "up-to-date"
+    by_key = {(x.platform, x.scope): x.outcome for x in status(root, home)}
+    assert by_key[("copilot", "project")] == "up-to-date"
+
+
+def test_a_real_local_edit_still_reads_as_differs(roots):
+    # Accepting the workaround variant must not turn file_state into "accept anything".
+    root, home = roots
+    install("copilot", "project", root, home, cli_workaround=True)
+    target = skill_dir(PLATFORMS["copilot"], "project", root, home)
+    (target / "SKILL.md").write_text("locally edited", encoding="utf-8")
+    assert file_state(target, "SKILL.md") == "differs"
+    assert install("copilot", "project", root, home).outcome == "blocked"
+
+
+def test_force_converts_between_workaround_and_normal(roots):
+    root, home = roots
+    install("copilot", "project", root, home, cli_workaround=True)
+    target = skill_dir(PLATFORMS["copilot"], "project", root, home)
+    head = _frontmatter_text(target / "SKILL.md")
+    assert not any(ln.startswith("disable-model-invocation:") for ln in head.splitlines())
+    # --force is the documented way back: content matches the packaged asset exactly.
+    assert install("copilot", "project", root, home, force=True).outcome == "installed"
+    assert (target / "SKILL.md").read_bytes() == packaged_content("SKILL.md")
+
+
+def test_remove_cleans_up_a_workaround_install(roots):
+    root, home = roots
+    install("copilot", "project", root, home, cli_workaround=True)
+    target = skill_dir(PLATFORMS["copilot"], "project", root, home)
+    assert uninstall("copilot", "project", root, home).outcome == "removed"
+    assert not target.exists()

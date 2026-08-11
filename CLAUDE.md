@@ -47,6 +47,15 @@ with Claude Code's semantics.
 Copilot (listed tools skip the confirmation prompt), unread on Codex. Hence the rail in
 `tests/test_assets.py` — it may never grow a shell/bash-family tool.
 
+`setup --copilot-cli-workaround` writes a variant `SKILL.md` with the manual-only key and
+its explanatory comment block removed, replaced by a banner (`cli_workaround_content`).
+Three things keep it honest and must stay: it forces `copy=True` (writing through a
+symlink would strip the key from the packaged asset for every install); `file_state`
+accepts the variant as `up-to-date` so `status` doesn't cry "modified" at a supported
+shape; and the comment block is taken structurally (the contiguous `#` run directly above
+the key), not by keyword, so rewording those comments cannot orphan half of them. Delete
+the whole thing once github/copilot-cli#4438 is fixed — it exists only for that bug.
+
 ## Dev loop
 
 ```bash

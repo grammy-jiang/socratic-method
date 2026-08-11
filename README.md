@@ -201,7 +201,7 @@ Support is **not uniform**, and one platform has no mechanism at all. Verified
 |---|---|---|
 | Claude Code | `disable-model-invocation: true` | Documented — [origin of the field](https://code.claude.com/docs/en/skills) |
 | VS Code (Copilot) | `disable-model-invocation` + `user-invocable: true` | Supported per the [cross-agent survey](https://gist.github.com/zeke/0f654737ec01b20e9bf85d3cc0bc1c14); absent from [VS Code's own docs](https://code.visualstudio.com/docs/agent-customization/agent-skills) |
-| Copilot CLI | `disable-model-invocation` | **Broken — the skill is unreachable.** Measured on CLI 1.0.79: the key removes the skill from the model entirely, so even an explicit `/socratic-method` returns `Skill not found`, while `copilot skill list` still shows it. [GitHub's docs](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills) never document the key. Tracked in [#18](https://github.com/grammy-jiang/socratic-method/issues/18); delete the line from your installed copy to use the skill there |
+| Copilot CLI | `disable-model-invocation` | **Broken — the skill is unreachable.** Measured on CLI 1.0.79: the key removes the skill from the model entirely, so even an explicit `/socratic-method` returns `Skill not found`, while `copilot skill list` still shows it. A **regression**, not a design choice — GitHub's own bundled docs and its SDK 1.0.39 (what VS Code runs) both specify that this key keeps the slash command working. Reported as [github/copilot-cli#4438](https://github.com/github/copilot-cli/issues/4438); see the workaround below |
 | Copilot cloud agent | none | **Known gap.** [The docs](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills) describe no user-only mechanism, so it may still pick the skill autonomously |
 | OpenAI Codex | `agents/openai.yaml` → `policy.allow_implicit_invocation: false` | Documented — [Codex skills](https://developers.openai.com/codex/skills); "explicit `$skill` invocation still works" |
 
@@ -214,6 +214,25 @@ Note also that `allowed-tools` is a *restriction* on Claude Code but a **pre-app
 list on Copilot, where listed tools skip the confirmation prompt. The shipped value is
 `AskUserQuestion, Read, Write`; a test in the package repository pins that it can never
 grow a shell/bash-family tool.
+
+#### Workaround for Copilot CLI
+
+If the CLI is where you use the skill, you can trade the guarantee for reachability:
+
+```bash
+socratic-method setup copilot --copilot-cli-workaround          # new install
+socratic-method setup copilot --copilot-cli-workaround --force  # convert an existing one
+```
+
+This writes an install whose `SKILL.md` has the `disable-model-invocation` key removed,
+replaced by a banner explaining what was dropped and why. The skill becomes reachable on
+Copilot CLI again — **and the model may auto-invoke it on that install**, which is the
+whole cost. Only take it if you actually use Copilot CLI.
+
+It implies `--copy` (a symlinked install would write the change back into the packaged
+asset, affecting every other install), `status` reports it as `up-to-date` rather than
+modified, and `setup copilot --force` without the flag converts it back once the upstream
+bug is fixed.
 
 ## Validate a brief
 
