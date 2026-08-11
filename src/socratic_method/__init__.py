@@ -8,6 +8,6 @@ command that installs the skill for Claude Code, OpenAI Codex, and GitHub Copilo
 
 # Keep this line as `__version__ = "X.Y.Z"` (double quotes, single spaces): both
 # hatchling's version source and tag-release.yml's sed guard parse this exact shape.
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 SKILL_NAME = "socratic-method"
