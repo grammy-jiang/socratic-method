@@ -421,6 +421,63 @@ def test_quotes_are_verbatim_passes_when_no_brief_was_written():
     assert "no brief written" in r["detail"]
 
 
+# --- refutation_mechanics: collisions surfaced across turns (#27) ------------------
+
+_C1 = "It absolutely must ship every single week without any exception."
+_C2 = "We only have three engineers and they are already fully booked."
+
+
+def test_refutation_mechanics_accepts_a_collision_surfaced_across_turns():
+    # Real examiners quote one claim, take the answer, then set the second against it.
+    # Requiring both side by side failed 6 of 6 live N1 runs, including the one that
+    # reached verdict: refuted.
+    transcript = [
+        _t("user", 1, _C1),
+        _t("examiner", 2, f'Earlier you said "{_C1}" — what does that cost you?'),
+        _t("user", 2, _C2),
+        _t("examiner", 3, f'But you also said "{_C2}". Which one yields?'),
+    ]
+    r = refutation_mechanics(transcript, GOLDEN, {})
+    assert r["passed"] is True
+    assert "across turns" in r["detail"]
+
+
+def test_refutation_mechanics_still_reports_the_side_by_side_form():
+    transcript = [
+        _t("user", 1, _C1),
+        _t("user", 2, _C2),
+        _t("examiner", 3, f'You said "{_C1}" but also "{_C2}" — which gives?'),
+    ]
+    r = refutation_mechanics(transcript, GOLDEN, {})
+    assert r["passed"] is True
+    assert "side by side" in r["detail"]
+
+
+def test_refutation_mechanics_needs_the_which_yields_ask_when_spread():
+    # Two quote-backs in unrelated probes are not an elenchus. Without a question
+    # alongside a quote, the spread form must not pass.
+    transcript = [
+        _t("user", 1, _C1),
+        _t("examiner", 2, f'Noted: "{_C1}".'),
+        _t("user", 2, _C2),
+        _t("examiner", 3, f'Noted: "{_C2}".'),
+    ]
+    assert refutation_mechanics(transcript, GOLDEN, {})["passed"] is False
+
+
+def test_refutation_mechanics_rejects_one_claim_requoted_at_two_lengths():
+    # Re-quoting the same sentence shorter is ONE claim, not two.
+    short = "must ship every single week without any exception"
+    transcript = [
+        _t("user", 1, _C1),
+        _t("examiner", 2, f'You said "{_C1}" — is that firm?'),
+        _t("examiner", 3, f'Again: "{short}". Which yields?'),
+    ]
+    r = refutation_mechanics(transcript, GOLDEN, {})
+    assert r["passed"] is False
+    assert "1 distinct verbatim quote" in r["detail"]
+
+
 def test_phase1_draft_disclosure_is_not_the_synthesis_message():
     # SKILL.md Phase 1 tells the examiner to announce the running-draft location up
     # front. A bare-directory match made TURN ONE read as the synthesis, emptying the
