@@ -316,9 +316,19 @@ questions."), so the user gets the outcome without having to reassemble it from 
 - Never quote a phrase you composed yourself. Naming a thing the user described is fine —
   write *the broken-build incident*, not *the "broken build shipped to prod" incident*, when
   that exact string appears nowhere in the dialogue. Quotation marks around your own coinage
-  read to the user as their own words.
+  read to the user as their own words. This holds for illustrative examples too: write
+  *an order-status ticket*, not *a ticket like "your order shipped"*, unless the user said it.
+- **Never alter a quote to fit your sentence — not even in brackets.** Bracketed grammatical
+  repair is a scholarly convention, and it is still a misquote here: writing
+  "just resolve[s] and close[s] the ticket itself" when the user said "just resolve and close
+  the ticket itself" puts words in their mouth. Reshape *your own* sentence around the quote,
+  quote a shorter fragment that already fits, or drop the quotation marks. The same goes for
+  changing tense, number, capitalisation mid-quote, or silently fixing a typo.
 - If you cannot reproduce the words exactly, **paraphrase without quotation marks**. A
-  paraphrase is honest; an approximate quote is not.
+  paraphrase is honest; an approximate quote is not. This is not a licence to avoid
+  refutation: `verdict: refuted` still requires the colliding answers verbatim, so if you
+  cannot reproduce them exactly, the honest verdict is **aporia** with the contradiction
+  recorded as the open question — never a refutation built on an approximated quote.
 
 **Self-check before presenting:** after writing the file, `Read` it back from disk and
 check what is actually there — never self-check from memory, and never say "saved" for a

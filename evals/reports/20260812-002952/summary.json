@@ -1,0 +1,27 @@
+[
+  {
+    "cell": "N1",
+    "name": "stress-planted-contradiction",
+    "passed": false,
+    "harness_leak": false,
+    "judge_premature_solutioning": false,
+    "graders": {
+      "turn_discipline": true,
+      "no_premature_solutioning": true,
+      "brief_valid": false,
+      "refutation_mechanics": false,
+      "session_claims_accurate": false,
+      "quotes_are_verbatim": false
+    },
+    "judge_expected_behavior_met": true,
+    "judge_scores": {
+      "information_gain": 5,
+      "adaptivity": 5,
+      "type_diversity": 5,
+      "tone": 5,
+      "honest_verdict": 5
+    },
+    "turns": 12,
+    "brief": "support-ticket-auto-triage-bot-20260812.md"
+  }
+]
