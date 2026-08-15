@@ -36,9 +36,11 @@ in sync (pinned by `tests/test_assets.py`): SKILL.md frontmatter
 (`policy.allow_implicit_invocation: false`, the Codex equivalent — Codex reads no
 frontmatter key beyond name/description). Support is **not uniform**, and the README's
 per-platform table is the authoritative statement of it: documented on Claude Code, VS
-Code and Codex; **broken on Copilot CLI**, where the key removes the skill from the model
-entirely so even explicit invocation fails (measured on 1.0.79 — see issue #18);
-**absent on the Copilot cloud agent**, which may still auto-invoke.
+Code and Codex; on **Copilot CLI** it works from 1.0.80 and was broken before that — the
+key removed the skill entirely, so even explicit invocation failed (measured on 1.0.79,
+fixed upstream in github/copilot-cli#4438; the opt-in workaround for older CLIs is being
+retired, see issue #18); **absent on the Copilot cloud agent**, which may still
+auto-invoke.
 `disable-model-invocation` is a client extension, not part of the agentskills.io spec —
 never restate the guarantee as one flat claim, and never assume a client implements it
 with Claude Code's semantics.
