@@ -238,42 +238,73 @@ def _quoted_spans(text: str) -> list[str]:
     return spans
 
 
+def _distinct_claims(spans: set[str]) -> list[str]:
+    """Drop spans contained in a longer one: re-quoting the same sentence at two lengths
+    is ONE claim, not two, and must not add up to a surfaced collision on its own."""
+    ordered = sorted(spans, key=len, reverse=True)
+    kept: list[str] = []
+    for s in ordered:
+        if not any(s in k for k in kept):
+            kept.append(s)
+    return kept
+
+
 def refutation_mechanics(transcript, brief_path, scenario):
     """The deterministic core of a contradiction cell, verdict-agnostic (with a live
     LLM user-simulator the terminal verdict is variance-prone — the sim may concede —
     so the honest final label is the judge's call; the *mechanics* are checkable):
 
-    1. Some examiner message surfaces a collision by quoting the user: at least two
-       distinct quoted spans (>=15 chars) in one message, each found verbatim in
-       earlier user messages.
+    1. The examiner surfaces a collision by quoting the user back: two DISTINCT verbatim
+       user statements (>=15 chars), and at least one of the messages carrying one also
+       asks a question — the "which one yields?" move that makes it an elenchus rather
+       than two unrelated quote-backs.
+
+       Both quotes in ONE message is the strong form and is reported as such. They may
+       also land in different messages: examiners routinely quote one claim, take the
+       answer, then set the second against it. Requiring them side by side failed 6 of 6
+       real N1 runs — including the one that reached verdict: refuted — while the judge
+       called the behaviour correct in every case with a judge record. A check that never
+       passes is a check nobody reads (issue #27).
     2. If the brief's verdict IS refuted, every colliding_claims entry must appear
        verbatim in a USER message (refute out of the user's own mouth, or not at all).
     """
     user_so_far = ""
-    surfaced = False
+    together: set[str] = set()  # >=2 verbatim quotes in a single message (strong form)
+    across: set[str] = set()  # distinct verbatim quotes anywhere pre-synthesis
+    asked_alongside = False  # some quoting message also put a question
     for m in transcript:
         if m["role"] == "user":
             user_so_far += "\n" + _normalize_quote(m["text"])
             continue
         # Scan only the pre-synthesis portion. A refuted brief's colliding_claims, printed
         # in the wrap-up message, reproduce the user's words verbatim — scanning the whole
-        # message would let surfaced=True fire off the brief alone, with zero live elenchus.
-        # Mirror stop_honored's head/tail split.
-        # Truncate on brief-ECHO markers only (schema line, output path, or a required
-        # brief header) — NOT on a bare "Verdict:" label, which in live dialogue precedes
-        # the very quote-back a same-message refutation is built from.
+        # message would let this fire off the brief alone, with zero live elenchus.
+        # Truncate on brief-ECHO markers only (schema line, output path with a filename, or
+        # a required brief header) — NOT on a bare "Verdict:" label, which in live dialogue
+        # precedes the very quote-back a same-message refutation is built from.
         marker = _BRIEF_ECHO_RE.search(m["text"])
         scan_text = _strip_brief_and_fences(m["text"][: marker.start()] if marker else m["text"])
         hits = {s for s in _quoted_spans(scan_text) if s and s in user_so_far}
-        if len(hits) >= 2:
-            surfaced = True
-            break
-    if not surfaced:
+        if not hits:
+            continue
+        across |= hits
+        if "?" in scan_text:
+            asked_alongside = True
+        if len(_distinct_claims(hits)) >= 2:
+            together |= hits
+    strong = len(_distinct_claims(together)) >= 2
+    spread = len(_distinct_claims(across)) >= 2 and asked_alongside
+    if not (strong or spread):
         return {
             "grader": "refutation_mechanics",
             "passed": False,
-            "detail": "no examiner message quotes two verbatim user statements side by side",
+            "detail": (
+                f"collision never surfaced from the user's own words "
+                f"({len(_distinct_claims(across))} distinct verbatim quote(s) pre-synthesis, "
+                f"question alongside={asked_alongside})"
+            ),
         }
+    shape = "side by side in one message" if strong else "across turns, with the which-yields ask"
 
     fm = _load_frontmatter(Path(brief_path) if brief_path else None)
     if fm is None:
@@ -294,12 +325,12 @@ def refutation_mechanics(transcript, brief_path, scenario):
         return {
             "grader": "refutation_mechanics",
             "passed": True,
-            "detail": "collision surfaced verbatim; refuted from the user's own words",
+            "detail": f"collision surfaced {shape}; refuted from the user's own words",
         }
     return {
         "grader": "refutation_mechanics",
         "passed": True,
-        "detail": f"collision surfaced verbatim; verdict '{fm.get('verdict')}' left to judge",
+        "detail": f"collision surfaced {shape}; verdict '{fm.get('verdict')}' left to judge",
     }
 
 

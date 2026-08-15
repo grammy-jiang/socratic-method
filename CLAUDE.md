@@ -184,6 +184,14 @@ Two tiers that measure different things — do not conflate them:
 - Grader triggers and persona scripts are phrase-coupled: `stop_honored` keys on
   "that's enough"/"wrap up", `dispute_loop_honored` on "not quite". Edit a persona line
   and its grader together.
+- `refutation_mechanics` accepts a collision surfaced **across turns**, not only side by
+  side in one message — real examiners quote one claim, take the answer, then set the
+  second against it. The side-by-side-only rule failed 6 of 6 live N1 runs including the
+  one that reached `refuted` (#27). The spread form additionally requires a question
+  alongside a quote (the which-yields ask), so two unrelated quote-backs do not count,
+  and re-quoting one sentence at two lengths counts as one claim. Do NOT drop the
+  `_BRIEF_ECHO_RE` truncation while touching this: it exists because the printed brief's
+  own `colliding_claims` used to satisfy the check with zero live elenchus.
 - `quotes_are_verbatim` runs on every cell and is deliberately strict: a quoted span in
   the brief body must be reproducible, in order, from a **single** transcript message, so
   an ellipsis may elide within one utterance but never weld two. It scans the body only —
