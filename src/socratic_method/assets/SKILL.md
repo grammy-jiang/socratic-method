@@ -14,7 +14,7 @@ allowed-tools: AskUserQuestion, Read, Write
 # invocation table in the package README for the mechanism and source behind each:
 #   Claude Code    disable-model-invocation      documented
 #   VS Code        disable-model-invocation + user-invocable   documented
-#   Copilot CLI    disable-model-invocation      BROKEN: removes the skill entirely
+#   Copilot CLI    disable-model-invocation      works from CLI 1.0.80; broken before
 #   Copilot cloud  no user-only mechanism        known gap; may still auto-invoke
 #   Codex          reads neither key — its policy ships in agents/openai.yaml
 # user-invocable defaults to true; stated explicitly so the VS Code pairing lands on

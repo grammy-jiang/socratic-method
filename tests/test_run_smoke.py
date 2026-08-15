@@ -122,6 +122,33 @@ def test_known_breakage_keys_name_real_platforms_and_probes():
         assert probe in probes
 
 
+def test_known_breakage_is_empty_until_a_vendor_bug_needs_it():
+    # Documents intent: entries are temporary. The Copilot CLI one was removed when
+    # github/copilot-cli#4438 was fixed in CLI 1.0.80 — left in place it would have
+    # reported XPASS and failed every run on an upgraded machine.
+    assert run_smoke.KNOWN_BREAKAGE == {}
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [("FAIL", "XFAIL"), ("PASS", "XPASS"), ("ERROR", "ERROR")],
+)
+def test_apply_known_breakage_maps_outcomes(monkeypatch, raw, expected):
+    # The mechanism must stay covered while KNOWN_BREAKAGE is empty, or the whole
+    # XFAIL/XPASS path goes unexercised until the next vendor bug lands.
+    monkeypatch.setitem(run_smoke.KNOWN_BREAKAGE, ("copilot", "discovery"), "demo — repo#1")
+    status, detail = run_smoke.apply_known_breakage("copilot", "discovery", raw, "orig")
+    assert status == expected
+    if expected == "XPASS":
+        assert "NO LONGER BROKEN" in detail
+    if expected == "ERROR":
+        assert detail == "orig"  # an ungraded probe proves nothing either way
+
+
+def test_apply_known_breakage_leaves_unlisted_probes_alone():
+    assert run_smoke.apply_known_breakage("codex", "discovery", "FAIL", "d") == ("FAIL", "d")
+
+
 def test_known_breakage_reasons_link_upstream():
     # "Known" has to mean reported, not merely tolerated — otherwise the XFAIL is a
     # place to park a bug forever.

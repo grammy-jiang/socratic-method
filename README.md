@@ -201,7 +201,7 @@ Support is **not uniform**, and one platform has no mechanism at all. Verified
 |---|---|---|
 | Claude Code | `disable-model-invocation: true` | Documented — [origin of the field](https://code.claude.com/docs/en/skills) |
 | VS Code (Copilot) | `disable-model-invocation` + `user-invocable: true` | Supported per the [cross-agent survey](https://gist.github.com/zeke/0f654737ec01b20e9bf85d3cc0bc1c14); absent from [VS Code's own docs](https://code.visualstudio.com/docs/agent-customization/agent-skills) |
-| Copilot CLI | `disable-model-invocation` | **Broken — the skill is unreachable.** Measured on CLI 1.0.79: the key removes the skill from the model entirely, so even an explicit `/socratic-method` returns `Skill not found`, while `copilot skill list` still shows it. A **regression**, not a design choice — GitHub's own bundled docs and its SDK 1.0.39 (what VS Code runs) both specify that this key keeps the slash command working. Reported as [github/copilot-cli#4438](https://github.com/github/copilot-cli/issues/4438); see the workaround below |
+| Copilot CLI | `disable-model-invocation` | Works from **CLI 1.0.80**. Earlier versions (measured on 1.0.79) dropped the skill entirely — even an explicit `/socratic-method` returned `Skill not found` while `copilot skill list` still showed it. That was a regression, [reported and fixed](https://github.com/github/copilot-cli/issues/4438). **On 1.0.79 or older, upgrade the CLI**; the workaround below exists only for people who cannot |
 | Copilot cloud agent | none | **Known gap.** [The docs](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills) describe no user-only mechanism, so it may still pick the skill autonomously |
 | OpenAI Codex | `agents/openai.yaml` → `policy.allow_implicit_invocation: false` | Documented — [Codex skills](https://developers.openai.com/codex/skills); "explicit `$skill` invocation still works" |
 
@@ -215,9 +215,12 @@ list on Copilot, where listed tools skip the confirmation prompt. The shipped va
 `AskUserQuestion, Read, Write`; a test in the package repository pins that it can never
 grow a shell/bash-family tool.
 
-#### Workaround for Copilot CLI
+#### Workaround for Copilot CLI older than 1.0.80
 
-If the CLI is where you use the skill, you can trade the guarantee for reachability:
+**Upgrade first — `copilot update` is the real fix.** This flag exists only for people
+pinned to an older CLI, and it will be removed once that is no longer a live situation.
+
+If you are stuck on 1.0.79 or earlier, you can trade the guarantee for reachability:
 
 ```bash
 socratic-method setup copilot --copilot-cli-workaround          # new install
@@ -289,10 +292,11 @@ Needs each platform's CLI authenticated; 2 headless calls per platform. Probe ou
 | `XFAIL` | a measured, upstream-reported breakage listed in `KNOWN_BREAKAGE` — does not fail the run |
 | `XPASS` | a known breakage that now passes — **does** fail the run, because the docs describing it have gone stale and must be removed |
 
-Today one entry is expected-broken: Copilot CLI discovery, tracked in
-[#18](https://github.com/grammy-jiang/socratic-method/issues/18) and
-[github/copilot-cli#4438](https://github.com/github/copilot-cli/issues/4438). Like the rest
-of `evals/`, this must never run in CI.
+`KNOWN_BREAKAGE` is currently empty. It held one entry — Copilot CLI discovery — until
+[github/copilot-cli#4438](https://github.com/github/copilot-cli/issues/4438) was fixed in
+CLI 1.0.80; the entry came out because leaving it would report `XPASS` and fail every run
+on an upgraded machine. Against 1.0.79 or older the probe now reports an honest `FAIL`.
+Like the rest of `evals/`, this must never run in CI.
 
 It does **not** grade questioning behavior — no turn discipline, no stop signal, no verdict
 honesty. Those need a scripted multi-turn simulator and stay in `run_eval.py`.

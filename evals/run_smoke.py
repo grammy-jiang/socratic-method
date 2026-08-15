@@ -162,12 +162,33 @@ RUNNERS: dict[str, Runner] = {
 # A FAIL here is reported XFAIL and does not fail the run — the tier stays usable as a
 # gate. A PASS is reported XPASS and DOES fail: the vendor has fixed it, so the entry and
 # the docs that describe the breakage are now stale and must be removed in the same pass.
-KNOWN_BREAKAGE: dict[tuple[str, str], str] = {
-    ("copilot", "discovery"): (
-        "Copilot CLI drops skills carrying disable-model-invocation entirely, so even "
-        "explicit invocation fails — socratic-method#18, github/copilot-cli#4438"
-    ),
-}
+# Empty on purpose. The one entry that lived here — Copilot CLI dropping skills that
+# carry disable-model-invocation — was fixed upstream in CLI 1.0.80
+# (github/copilot-cli#4438), so the discovery probe now PASSES against an updated CLI.
+# Leaving the entry in place would report XPASS and fail every run on an upgraded
+# machine, which is the mechanism working: a healed breakage is meant to fail loudly
+# until the stale entry and its docs are removed. Against CLI 1.0.79 or earlier the probe
+# now reports an honest FAIL, which is the truth for that version.
+KNOWN_BREAKAGE: dict[tuple[str, str], str] = {}
+
+
+def apply_known_breakage(platform: str, probe: str, status: str, detail: str) -> tuple[str, str]:
+    """Map a raw probe outcome through KNOWN_BREAKAGE. Returns (status, detail).
+
+    Extracted from main() so the XFAIL/XPASS mechanism stays under test even when
+    KNOWN_BREAKAGE is empty — which it is today, and which would otherwise leave the
+    whole path unexercised until the next vendor bug.
+    """
+    known = KNOWN_BREAKAGE.get((platform, probe))
+    if not known:
+        return status, detail
+    if status == "FAIL":
+        return "XFAIL", f"known: {known}"
+    if status == "PASS":
+        return "XPASS", (
+            f"NO LONGER BROKEN — drop the KNOWN_BREAKAGE entry and the docs describing it ({known})"
+        )
+    return status, detail  # ERROR stays ERROR: an ungraded probe proves nothing either way
 
 
 def parse_model_overrides(raw: list[str] | None) -> dict[str, str]:
@@ -352,14 +373,9 @@ def main(argv: list[str] | None = None) -> int:
     for key in keys:
         print(f"\n== {key}")
         for result in smoke(key, args.keep_workdir, models.get(key)):
-            status, detail = result["status"], result["detail"]
-            if known := KNOWN_BREAKAGE.get((key, result["probe"])):
-                if status == "FAIL":
-                    status, detail = "XFAIL", f"known: {known}"
-                elif status == "PASS":
-                    status = "XPASS"
-                    detail = "NO LONGER BROKEN — drop the KNOWN_BREAKAGE entry and the "
-                    detail += f"docs describing it ({known})"
+            status, detail = apply_known_breakage(
+                key, result["probe"], result["status"], result["detail"]
+            )
             tally[status] += 1
             print(f"  [{status:5s}] {result['probe']:12s} {detail}")
             if args.show_output or status in ("FAIL", "ERROR"):
