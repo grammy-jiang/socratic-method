@@ -660,7 +660,29 @@ def quotes_are_verbatim(transcript, brief_path, scenario):
     examiner's own restatement back. The failure this catches is a quote that exists in no
     single utterance at all.
 
-    Known, deliberate boundary: attributions nested inside other frontmatter scalars (the
+    KNOWN GAP, measured and accepted (#26). Because an examiner message counts as a source,
+    a phrase the EXAMINER coined and then quoted in the brief passes here. The judge caught
+    exactly that on a brief this grader passed 17/17, scoring ``fabrication: true`` over
+    ``"these tickets need LLM judgment"``.
+
+    Restricting matches to user messages was measured against all 26 committed briefs and
+    rejected: it catches that one defect and newly fails four green briefs, because
+    quotation marks in a brief do three different jobs and no source-based rule separates
+    them —
+
+    - **attribution** — the user's words (what this grader is for);
+    - **restatement** — the steelman thesis, which the examiner composed by definition
+      (``"write an internal blog post arguing we should adopt trunk-based development."``);
+    - **term of art** — SKILL.md's own vocabulary (``"questioning the question"``), and
+      questions the examiner asked, quoted back.
+
+    One false negative traded for three classes of false positive is a bad deal in a grader
+    whose whole value is that a red reading means something. Examiner-coinage stays with the
+    judge, which is the sensor that can tell the three apart. Revisit only if it recurs — and
+    then by making the jobs separable in SKILL.md (quotes reserved for attribution,
+    restatements and terms in italics), not by tightening the source rule.
+
+    Second deliberate boundary: attributions nested inside other frontmatter scalars (the
     golden fixture's ``constraints`` entry carries one) are not scanned. Reaching them means
     quote-hunting inside parsed YAML strings, where an apostrophe in ``it's`` is
     indistinguishable from a closing single quote — more false positives than the narrow

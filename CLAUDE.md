@@ -198,6 +198,13 @@ Two tiers that measure different things — do not conflate them:
   never raw frontmatter, where `thesis_final: "..."` is YAML syntax, not speech. If it
   starts failing on legitimate scare-quotes, the fix is the SKILL.md rail (quotation marks
   are reserved for attribution; paraphrase without them), not a looser grader.
+  It has a **measured, accepted gap** (#26): a span may match any single message, so a
+  phrase the *examiner* coined and then quoted passes. Restricting to user messages was
+  replayed over all 26 committed briefs — it catches that one defect and newly fails four
+  green ones, because quotes in a brief do three jobs (attribution, steelman restatement,
+  term of art like `"questioning the question"`) that no source-based rule separates.
+  Examiner-coinage is the judge's job. If it recurs, fix it by making the jobs separable in
+  SKILL.md, not by tightening the source rule.
 - The examiner tool grant is deliberately `--allowedTools Skill,Read,Write,Edit` — close
   to, but not identical to, SKILL.md's `allowed-tools` (which names AskUserQuestion, not
   Edit). Widening it changes what the eval measures.
