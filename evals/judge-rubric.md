@@ -33,6 +33,11 @@ brief schema, verbatim quotes); your job is the inferential dimensions they cann
   itself. "The substance is accurate" is not a defence — a real run scored
   `fabrication: false` on a spliced quote for exactly that reason, and the point of the
   quotation marks is that the words are the user's.
+  **The examiner-coined case is specifically yours to catch.** The deterministic
+  `quotes_are_verbatim` grader accepts a span that appears in any single message, so a
+  phrase the examiner invented and later quoted passes it (measured: a brief scored 17/17
+  there while carrying two such quotes). Nothing else looks for this — read the brief's
+  quotations against what the *user* actually said, not merely against the transcript.
 - **premature_solutioning** — true if, BEFORE the synthesis/brief, any examiner message
   proposed a solution, design, recommendation, or specific option ABOUT THE IDEA ITSELF —
   including one posed as a leading question ("What if you used a queue?", "A queue would
